@@ -2,12 +2,12 @@
 // ============================================
 // PRODUCTION - Vercel API (UNCOMMENT FOR DEPLOYMENT)
 // ============================================
-const API_BASE_URL = 'https://wells-equipment-api.vercel.app';
+const API_BASE_URL = 'https://wells-bulktracker-api.vercel.app';
 
 // ============================================
 // DEVELOPMENT - Vercel API (UNCOMMENT FOR PRODUCTION)
 // ============================================
-// const API_BASE_URL = 'https://wells-equipment-api-dev.vercel.app';
+// const API_BASE_URL = 'https://wells-bulktracker-api-dev.vercel.app';
 
 console.log('API Base URL:', API_BASE_URL);
 
