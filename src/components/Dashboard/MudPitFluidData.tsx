@@ -1,5 +1,5 @@
 // src/components/Dashboard/MudPitFluidData.tsx
-import { Paper, Typography, Divider, Box, TextField, Grid } from '@mui/material';
+import { Paper, Typography, Divider } from '@mui/material';
 import './MudPitFluidData.css';
 
 export interface MudPitFluidDataProps {
@@ -74,7 +74,7 @@ const MudPitFluidData = ({ fluidData }: MudPitFluidDataProps) => {
 
     const data = fluidData || defaultData;
 
-    const PitCard = ({ pit, title }: { pit: PitData; title?: string }) => (
+    const PitCard = ({ pit }: { pit: PitData; title?: string }) => (
         <div className="pit-card">
             <div className="pit-title">
                 <Typography className="pit-name">{pit.name}</Typography>

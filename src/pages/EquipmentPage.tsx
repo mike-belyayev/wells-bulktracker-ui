@@ -60,14 +60,14 @@ const EquipmentPage = () => {
     ]);
     
     // Fix: Use undefined instead of null with proper typing
-    const [wellData, setWellData] = useState<{
+    const [wellData] = useState<{
         wellName?: string;
         waterDepth?: number;
         airGap?: number;
         casingProfiles?: CasingProfile[];
     } | undefined>(undefined);
     
-    const [fluidData, setFluidData] = useState<any>(undefined);
+    const [fluidData] = useState<any>(undefined);
     
     // Last Updated data states
     const [lastUpdatedDate] = useState<string>('15-JAN-2025');
