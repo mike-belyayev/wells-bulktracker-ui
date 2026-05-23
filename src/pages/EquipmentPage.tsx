@@ -10,6 +10,8 @@ import './EquipmentPage.css';
 
 // Import types from LastUpdated
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
+// Import CasingProfile type from WellInformation
+import type { CasingProfile } from '../components/Dashboard/WellInformation';
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
@@ -57,8 +59,15 @@ const EquipmentPage = () => {
         }
     ]);
     
-    const [wellData] = useState(null);
-    const [fluidData] = useState(null);
+    // Fix: Use undefined instead of null with proper typing
+    const [wellData, setWellData] = useState<{
+        wellName?: string;
+        waterDepth?: number;
+        airGap?: number;
+        casingProfiles?: CasingProfile[];
+    } | undefined>(undefined);
+    
+    const [fluidData, setFluidData] = useState<any>(undefined);
     
     // Last Updated data states
     const [lastUpdatedDate] = useState<string>('15-JAN-2025');
