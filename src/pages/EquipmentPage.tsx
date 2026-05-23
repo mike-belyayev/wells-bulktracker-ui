@@ -8,6 +8,9 @@ import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Das
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
 
+// Import types from LastUpdated
+import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
+
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
     const isAdmin = user?.isAdmin || false;
@@ -54,9 +57,32 @@ const EquipmentPage = () => {
         }
     ]);
     
-    const [wellData, setWellData] = useState(null);
-    const [fluidData, setFluidData] = useState(null);
-    const [recentUpdates, setRecentUpdates] = useState([]);
+    const [wellData] = useState(null);
+    const [fluidData] = useState(null);
+    
+    // Last Updated data states
+    const [lastUpdatedDate] = useState<string>('15-JAN-2025');
+    const [bopSystemsData] = useState<BopSystem[]>([
+        { id: '1', system: 'BOP Pressure Test', testDate: '10-JAN-2025', nextDate: '10-FEB-2025' },
+        { id: '2', system: 'BSR Pressure Test', testDate: '12-JAN-2025', nextDate: '12-FEB-2025' },
+        { id: '3', system: 'BOP Function Test', testDate: '08-JAN-2025', nextDate: '08-FEB-2025' },
+        { id: '4', system: 'Choke Manifold', testDate: '05-JAN-2025', nextDate: '05-FEB-2025' },
+        { id: '5', system: 'Standpipe Manifold', testDate: '15-JAN-2025', nextDate: '15-FEB-2025' },
+        { id: '6', system: 'Cement Manifold', testDate: '09-JAN-2025', nextDate: '09-FEB-2025' },
+        { id: '7', system: 'TIW Grey Valves', testDate: '11-JAN-2025', nextDate: '11-FEB-2025' },
+        { id: '8', system: 'I-BOPs', testDate: '07-JAN-2025', nextDate: '07-FEB-2025' },
+        { id: '9', system: 'Diverter Function', testDate: '13-JAN-2025', nextDate: '13-FEB-2025' },
+        { id: '10', system: 'CSR Function', testDate: '14-JAN-2025', nextDate: '14-FEB-2025' },
+        { id: '11', system: 'BSR Function', testDate: '16-JAN-2025', nextDate: '16-FEB-2025' },
+        { id: '12', system: 'WH Glycol Injection', testDate: '17-JAN-2025', nextDate: '17-FEB-2025' }
+    ]);
+    
+    const [mudPumpLinersData] = useState<MudPumpLiner[]>([
+        { id: '1', pump: 1, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
+        { id: '2', pump: 2, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
+        { id: '3', pump: 3, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
+        { id: '4', pump: 4, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 }
+    ]);
     
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -79,10 +105,6 @@ const EquipmentPage = () => {
             // Fetch supply vessels
             // const vesselsResponse = await fetch(API_ENDPOINTS.SUPPLY_VESSELS);
             // setVessels(vesselsResponse.data);
-            
-            // Fetch recent updates
-            // const updatesResponse = await fetch(API_ENDPOINTS.RECENT_UPDATES);
-            // setRecentUpdates(updatesResponse.data);
             
             console.log('Dashboard data fetched');
         } catch (err) {
@@ -110,21 +132,18 @@ const EquipmentPage = () => {
         showSnackbar('Dashboard refreshed', 'success');
     };
 
-    // API save handlers
+    // Supply Vessel CRUD operations
     const handleVesselsChange = (newVessels: SupplyVessel[]) => {
         setVessels(newVessels);
         // Here you would also save to API
-        // await saveVesselsToAPI(newVessels);
     };
 
     const handleSaveVessel = async (vessel: SupplyVessel) => {
-        // Save individual vessel to API
         console.log('Saving vessel:', vessel);
         // await fetch(API_ENDPOINTS.SUPPLY_VESSEL, { method: 'PUT', body: JSON.stringify(vessel) });
     };
 
     const handleDeleteVessel = async (id: string) => {
-        // Delete vessel from API
         console.log('Deleting vessel:', id);
         // await fetch(`${API_ENDPOINTS.SUPPLY_VESSEL}/${id}`, { method: 'DELETE' });
     };
@@ -139,7 +158,7 @@ const EquipmentPage = () => {
 
     return (
         <div className="equipment-container">
-            {/* Header */}
+            {/* Header - Stays at top */}
             <AppBar position="static" className="equipment-header">
                 <Toolbar className="header-toolbar">
                     <Box className="header-left">
@@ -185,32 +204,33 @@ const EquipmentPage = () => {
                 </Toolbar>
             </AppBar>
 
-            {/* Main Content */}
+            {/* Main Content - Dynamic layout */}
             <div className="main-content">
-                {/* TOP SECTION - Three columns */}
+                {/* TOP SECTION - Takes remaining space */}
                 <div className="top-section">
                     <div className="three-column-layout">
+                        {/* Left Column - Well Information (25%) */}
                         <div className="column left-column">
-                            <WellInformation 
-                                wellData={wellData}
-                                readOnly={!isAdmin}
-                            />
+                            <WellInformation wellData={wellData} />
                         </div>
 
+                        {/* Middle Column - Mud Pit Capacities & Fluid Data (50%) */}
                         <div className="column middle-column">
-                            <MudPitFluidData 
-                                fluidData={fluidData}
-                                readOnly={!isAdmin}
-                            />
+                            <MudPitFluidData fluidData={fluidData} />
                         </div>
 
+                        {/* Right Column - Last Updated (25%) */}
                         <div className="column right-column">
-                            <LastUpdated updates={recentUpdates} />
+                            <LastUpdated 
+                                lastUpdatedDate={lastUpdatedDate}
+                                bopSystemsData={bopSystemsData}
+                                mudPumpLinersData={mudPumpLinersData}
+                            />
                         </div>
                     </div>
                 </div>
 
-                {/* BOTTOM SECTION - Supply Vessels */}
+                {/* BOTTOM SECTION - Height determined by content */}
                 <div className="bottom-section">
                     <SupplyVesselsTable 
                         vessels={vessels}
@@ -222,7 +242,7 @@ const EquipmentPage = () => {
                 </div>
             </div>
 
-            {/* Snackbar */}
+            {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

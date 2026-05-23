@@ -4,11 +4,11 @@ import './WellInformation.css';
 
 export interface WellInformationProps {
     wellData?: any;
-    onUpdate?: (data: any) => void;
-    readOnly?: boolean;
+    _onUpdate?: (data: any) => void;  // Prefix with _
+    _readOnly?: boolean;  // Prefix with _
 }
 
-const WellInformation = ({ wellData, onUpdate, readOnly = false }: WellInformationProps) => {
+const WellInformation = ({ wellData, _onUpdate, _readOnly }: WellInformationProps) => {
     return (
         <Paper className="info-panel" elevation={3}>
             <div className="panel-header">
@@ -20,10 +20,8 @@ const WellInformation = ({ wellData, onUpdate, readOnly = false }: WellInformati
             <div className="panel-content">
                 {wellData ? (
                     <div className="well-info-content">
-                        {/* Add your well information fields here */}
                         <Typography variant="body2">Well Name: {wellData.wellName}</Typography>
                         <Typography variant="body2">Well AFE: {wellData.wellAFE}</Typography>
-                        {/* Add more fields as needed */}
                     </div>
                 ) : (
                     <Typography variant="body2" color="textSecondary" className="placeholder-text">

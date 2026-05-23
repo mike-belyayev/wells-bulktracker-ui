@@ -4,11 +4,11 @@ import './MudPitFluidData.css';
 
 export interface MudPitFluidDataProps {
     fluidData?: any;
-    onUpdate?: (data: any) => void;
-    readOnly?: boolean;
+    _onUpdate?: (data: any) => void;  // Prefix with _
+    _readOnly?: boolean;  // Prefix with _
 }
 
-const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
+const MudPitFluidData = ({ fluidData, _onUpdate, _readOnly }: MudPitFluidDataProps) => {
     return (
         <Paper className="info-panel" elevation={3}>
             <div className="panel-header">
@@ -20,10 +20,8 @@ const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidD
             <div className="panel-content">
                 {fluidData ? (
                     <div className="fluid-data-content">
-                        {/* Add your fluid data fields here */}
                         <Typography variant="body2">Pit Volume: {fluidData.pitVolume}</Typography>
                         <Typography variant="body2">Mud Weight: {fluidData.mudWeight}</Typography>
-                        {/* Add more fields as needed */}
                     </div>
                 ) : (
                     <Typography variant="body2" color="textSecondary" className="placeholder-text">
