@@ -6,170 +6,114 @@
     flex-direction: column;
     overflow: hidden;
     background-color: white !important;
+    border-radius: 8px;
 }
 
 .panel-header {
-    padding: 8px 12px;
-    background-color: #f5f5f5;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     flex-shrink: 0;
     text-align: center;
 }
 
 .panel-title {
     font-weight: 700 !important;
-    font-size: 0.85rem !important;
-    color: #333;
+    font-size: 0.8rem !important;
+    color: white !important;
     text-align: center;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .fluid-content {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 10px;
+    background: #f8f9fa;
 }
 
-.fluid-section {
-    margin-bottom: 16px;
-}
-
-.fluid-section-bottom {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-}
-
-.section-label {
-    font-weight: 700;
-    font-size: 0.7rem;
-    color: #1976d2;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-}
-
+/* More compact grid */
 .pit-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    align-items: start;
 }
 
-.pit-grid-small {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-}
-
-.pit-grid-bottom {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.bottom-left {
-    flex: 1;
-}
-
-.bottom-right {
-    flex: 1;
-}
-
+/* Compact card design */
 .pit-card {
-    background-color: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 6px 8px;
-    transition: all 0.2s ease;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
 .pit-card:hover {
-    background-color: #f5f5f5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
 }
 
-.pit-title {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid #e0e0e0;
-    padding-bottom: 4px;
+/* Compact inverted header */
+.pit-header {
+    padding: 6px 8px;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+    text-align: center;
 }
 
 .pit-name {
-    font-weight: 700 !important;
+    font-weight: 800 !important;
     font-size: 0.7rem !important;
-    color: #333;
+    color: white !important;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.pit-capacity {
-    font-size: 0.6rem !important;
-    color: #666;
+/* Compact card body */
+.pit-details {
+    padding: 6px 8px;
+    background: white;
 }
 
 .pit-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-top: 3px;
+    align-items: baseline;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pit-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
 .pit-label {
-    font-size: 0.6rem !important;
-    font-weight: 600 !important;
-    color: #888;
+    font-size: 0.55rem !important;
+    font-weight: 700 !important;
+    color: #95a5a6;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .pit-value {
     font-size: 0.65rem !important;
-    font-weight: 500 !important;
-    color: #1976d2;
-    font-family: monospace;
-}
-
-.barite-section {
-    background-color: #f0f0f0;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 8px;
-}
-
-.barite-title {
-    font-weight: 800 !important;
-    font-size: 0.7rem !important;
-    color: #333;
-    margin-bottom: 6px;
-    text-align: center;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 3px;
-}
-
-.barite-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 4px;
-}
-
-.barite-label {
-    font-size: 0.6rem !important;
-    font-weight: 600 !important;
-    color: #666;
-}
-
-.barite-value {
-    font-size: 0.65rem !important;
     font-weight: 700 !important;
-    color: #f57c00;
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
+    color: #2c3e50;
 }
 
-/* Scrollbar */
+/* Scrollbar styling */
 .fluid-content::-webkit-scrollbar {
     width: 4px;
 }
 
 .fluid-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #e0e0e0;
     border-radius: 2px;
 }
 
@@ -178,51 +122,92 @@
     border-radius: 2px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive - fewer columns on smaller screens */
+@media (max-width: 1400px) {
     .pit-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .fluid-section-bottom {
-        flex-direction: column;
-    }
-    
-    .pit-card {
-        padding: 4px 6px;
-    }
-    
-    .pit-name {
-        font-size: 0.65rem !important;
-    }
-    
-    .pit-label, .pit-value {
-        font-size: 0.55rem !important;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
     }
 }
 
-@media (min-width: 2560px) {
-    .fluid-content {
-        padding: 20px;
-    }
-    
+@media (max-width: 1100px) {
     .pit-grid {
-        gap: 16px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+}
+
+@media (max-width: 800px) {
+    .pit-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
     
-    .pit-card {
-        padding: 10px 12px;
+    .fluid-content {
+        padding: 8px;
+    }
+}
+
+@media (max-width: 500px) {
+    .pit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* For very large screens - keep compact */
+@media (min-width: 2560px) {
+    .pit-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+    }
+    
+    .fluid-content {
+        padding: 12px;
+    }
+    
+    .pit-header {
+        padding: 8px 10px;
     }
     
     .pit-name {
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
     }
     
-    .pit-capacity {
+    .pit-details {
+        padding: 8px 10px;
+    }
+    
+    .pit-label {
+        font-size: 0.6rem !important;
+    }
+    
+    .pit-value {
         font-size: 0.7rem !important;
     }
-    
-    .pit-label, .pit-value {
-        font-size: 0.75rem !important;
-    }
+}
+
+/* Ensure no overflow */
+.fluid-content {
+    overflow-y: auto;
+}
+
+/* Gradient border on hover */
+.pit-card {
+    position: relative;
+}
+
+.pit-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.pit-card:hover::before {
+    opacity: 1;
 }
