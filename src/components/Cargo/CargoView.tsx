@@ -23,8 +23,8 @@ const CargoView = () => {
             name: 'OCEAN VOYAGER',
             arrivalDate: '2025-01-20',
             containers: [
-                { id: 'c1', name: 'Drill Pipe 5"' },
-                { id: 'c2', name: 'Casing 9-5/8"' }
+                { id: 'c1', name: 'Drill Pipe 5" x 30ft' },
+                { id: 'c2', name: 'Casing 9-5/8" BTC' }
             ]
         },
         {
@@ -63,7 +63,7 @@ const CargoView = () => {
         };
         setBoats(boats.map(boat => 
             boat.id === boatId 
-                ? { ...boat, containers: [...boat.containers, newContainer] }
+                ? { ...boat, containers: [newContainer, ...boat.containers] }
                 : boat
         ));
     };
@@ -103,7 +103,6 @@ const CargoView = () => {
         setBoats(boats.filter(b => b.id !== boatId));
     };
 
-    // Group boats by arrival date
     const groupedBoats = boats.reduce((groups, boat) => {
         const date = boat.arrivalDate;
         if (!groups[date]) {
@@ -121,15 +120,14 @@ const CargoView = () => {
                 <Typography variant="h6" className="cargo-title">
                     SUPPLY VESSELS
                 </Typography>
-                <Button
+                <IconButton
                     size="small"
-                    variant="outlined"
-                    startIcon={<Add />}
                     onClick={addBoat}
-                    className="add-boat-btn"
+                    className="add-boat-icon-btn"
+                    title="Add boat"
                 >
-                    Add
-                </Button>
+                    <Add />
+                </IconButton>
             </div>
             <Divider />
             <div className="cargo-content">
@@ -143,24 +141,25 @@ const CargoView = () => {
                             {groupedBoats[date].map(boat => (
                                 <div key={boat.id} className="boat-wrapper">
                                     <div className="containers-stack">
-                                        {boat.containers.map(container => (
-                                            <div key={container.id} className="container-box">
-                                                <input
-                                                    type="text"
-                                                    value={container.name}
-                                                    onChange={(e) => updateContainerName(boat.id, container.id, e.target.value)}
-                                                    className="container-text-input"
-                                                    placeholder="Cargo description"
-                                                />
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => removeContainer(boat.id, container.id)}
-                                                    className="remove-container-icon"
-                                                >
-                                                    <DeleteOutline fontSize="small" />
-                                                </IconButton>
-                                            </div>
-                                        ))}
+{boat.containers.map(container => (
+    <div key={container.id} className="container-box">
+        <textarea
+            value={container.name}
+            onChange={(e) => updateContainerName(boat.id, container.id, e.target.value)}
+            className="container-text-input"
+            placeholder="Cargo description"
+            rows={1}
+            style={{ resize: 'vertical' }}
+        />
+        <IconButton
+            size="small"
+            onClick={() => removeContainer(boat.id, container.id)}
+            className="remove-container-icon"
+        >
+            <DeleteOutline fontSize="small" />
+        </IconButton>
+    </div>
+))}
                                         {boat.containers.length === 0 && (
                                             <div className="empty-container-placeholder">
                                                 <Typography className="empty-text">No cargo</Typography>
@@ -175,6 +174,7 @@ const CargoView = () => {
                                                     size="small"
                                                     onClick={() => addContainer(boat.id)}
                                                     className="add-cargo-icon"
+                                                    title="Add cargo"
                                                 >
                                                     <AddCircleOutline fontSize="small" />
                                                 </IconButton>
@@ -182,6 +182,7 @@ const CargoView = () => {
                                                     size="small"
                                                     onClick={() => removeBoat(boat.id)}
                                                     className="remove-boat-icon"
+                                                    title="Remove boat"
                                                 >
                                                     <Delete fontSize="small" />
                                                 </IconButton>

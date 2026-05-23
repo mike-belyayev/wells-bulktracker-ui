@@ -33,10 +33,10 @@
     background: #f8f9fa;
 }
 
-/* 4 column grid */
+/* 5 column grid */
 .pit-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 6px;
     align-items: start;
 }
@@ -44,7 +44,7 @@
 /* Card design */
 .pit-card {
     background: white;
-    border-radius: 6px;
+    border-radius: 4px;
     overflow: hidden;
     transition: all 0.2s ease;
     cursor: pointer;
@@ -143,24 +143,32 @@
     opacity: 1;
 }
 
-/* Responsive */
+/* Responsive - reduce columns on smaller screens */
+@media (max-width: 1600px) {
+    .pit-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+    }
+}
+
 @media (max-width: 1400px) {
     .pit-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .pit-grid {
         grid-template-columns: repeat(3, 1fr);
-        gap: 6px;
+        gap: 5px;
     }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
     .pit-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-    }
-}
-
-@media (max-width: 800px) {
-    .pit-grid {
-        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
     }
     
     .fluid-content {
@@ -168,7 +176,7 @@
     }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 600px) {
     .pit-grid {
         grid-template-columns: 1fr;
     }
@@ -176,7 +184,7 @@
 
 @media (min-width: 2560px) {
     .pit-grid {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 8px;
     }
     

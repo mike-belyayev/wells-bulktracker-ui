@@ -7,6 +7,7 @@
     overflow: hidden;
     background-color: white !important;
     border-radius: 4px;
+    width: 100%;
 }
 
 .cargo-header {
@@ -21,23 +22,21 @@
 
 .cargo-title {
     font-weight: 600 !important;
-    font-size: 0.65rem !important;
+    font-size: 0.7rem !important;
     color: #333 !important;
     letter-spacing: 0.3px;
 }
 
-.add-boat-btn {
-    text-transform: none !important;
-    font-size: 0.5rem !important;
-    padding: 2px 6px !important;
-    min-height: 20px !important;
-    border-color: #bdbdbd !important;
+.add-boat-icon-btn {
+    padding: 4px !important;
     color: #666 !important;
+    width: 24px;
+    height: 24px;
 }
 
-.add-boat-btn:hover {
-    background-color: #f5f5f5 !important;
-    border-color: #999 !important;
+.add-boat-icon-btn:hover {
+    color: #4caf50 !important;
+    background-color: transparent !important;
 }
 
 .cargo-content {
@@ -46,55 +45,63 @@
     overflow-x: hidden;
     padding: 6px;
     background: #fafafa;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .date-group {
     margin-bottom: 10px;
+    width: 100%;
 }
 
 .date-header-full {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 3px 6px;
+    gap: 6px;
+    padding: 4px 8px;
     background-color: #e0e0e0;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     width: 100%;
     border-radius: 0;
+    box-sizing: border-box;
 }
 
 .date-icon {
-    font-size: 9px !important;
+    font-size: 11px !important;
     color: #555;
 }
 
 .date-text {
     font-weight: 600 !important;
-    font-size: 0.5rem !important;
+    font-size: 0.55rem !important;
     color: #333;
 }
 
 .boats-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    width: 100%;
 }
 
 .boat-wrapper {
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 /* Containers stack */
 .containers-stack {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     margin-bottom: 0;
-    padding: 3px;
+    padding: 4px;
     background: #f0f0f0;
     border-radius: 2px 2px 0 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Container box */
@@ -102,27 +109,34 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 3px;
+    gap: 6px;
     background-color: #ffffff;
-    border: 1px solid #d0d0d0;
-    border-radius: 2px;
-    padding: 2px 3px;
+    border: 1px solid #c0c0c0;
+    border-radius: 3px;
+    padding: 4px 6px;
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
 }
 
 .container-text-input {
     flex: 1;
-    font-size: 0.45rem;
+    font-size: 0.55rem;
     font-weight: 500;
     color: #333;
     background: transparent;
     border: none;
     outline: none;
-    padding: 1px 2px;
-    font-family: monospace;
+    padding: 2px 2px;
+    font-family: inherit;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .container-text-input:focus {
-    background: #fafafa;
+    background: #f5f5f5;
+    border-radius: 2px;
 }
 
 .container-text-input::placeholder {
@@ -130,8 +144,9 @@
 }
 
 .remove-container-icon {
-    padding: 1px !important;
+    padding: 2px !important;
     color: #bbb !important;
+    flex-shrink: 0;
 }
 
 .remove-container-icon:hover {
@@ -142,13 +157,15 @@
 .empty-container-placeholder {
     background: #ffffff;
     border: 1px dashed #d0d0d0;
-    border-radius: 2px;
-    padding: 4px;
+    border-radius: 3px;
+    padding: 6px;
     text-align: center;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .empty-text {
-    font-size: 0.45rem !important;
+    font-size: 0.5rem !important;
     color: #aaa;
     font-style: italic;
 }
@@ -157,36 +174,43 @@
 .boat-shape {
     position: relative;
     margin-top: -1px;
+    width: 100%;
 }
 
 .boat-hull {
     background-color: #4a4a4a;
-    padding: 4px 6px;
+    padding: 5px 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
     clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 100%);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .boat-name-label {
     font-weight: 700 !important;
-    font-size: 0.5rem !important;
+    font-size: 0.55rem !important;
     color: white;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .boat-actions {
     display: flex;
     align-items: center;
     gap: 2px;
+    flex-shrink: 0;
 }
 
-/* Add cargo button - small plus */
 .add-cargo-icon {
-    padding: 1px !important;
+    padding: 2px !important;
     color: #aaa !important;
 }
 
@@ -195,9 +219,8 @@
     background: rgba(255,255,255,0.1) !important;
 }
 
-/* Delete boat button - black turns red */
 .remove-boat-icon {
-    padding: 1px !important;
+    padding: 2px !important;
     color: #222 !important;
 }
 
@@ -226,6 +249,15 @@
     background: #aaa;
 }
 
+/* Fix for right edge cutting off */
+.cargo-panel {
+    overflow: visible;
+}
+
+.fluid-content, .cargo-content, .last-updated-container {
+    overflow-x: hidden;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .cargo-header {
@@ -233,14 +265,14 @@
     }
     
     .cargo-title {
-        font-size: 0.6rem !important;
+        font-size: 0.65rem !important;
     }
     
     .container-text-input {
-        font-size: 0.4rem;
+        font-size: 0.5rem;
     }
     
     .boat-name-label {
-        font-size: 0.45rem !important;
+        font-size: 0.5rem !important;
     }
 }
