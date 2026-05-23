@@ -2,689 +2,108 @@
 import { useState, useEffect } from 'react';
 import {
     AppBar, Toolbar, IconButton, Typography, Box, Button,
-    MenuItem, Select, TextField, Popover, FormControl, Divider, Snackbar, Alert
+    Paper, Divider, Snackbar, Alert,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    IconButton as MuiIconButton, TextField
 } from '@mui/material';
-import { Settings, Add, Search, Edit } from '@mui/icons-material';
+import { 
+    Settings, Dashboard, Refresh, ExitToApp, 
+    Delete, Add, Edit, Save, Cancel 
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import WellColumn from '../components/EquipmentPage/WellColumn';
-import CreateWellModal from '../components/EquipmentPage/CreateWellModal';
-import AddPhaseModal from '../components/EquipmentPage/AddPhaseModal';
-import AddSubPhaseModal from '../components/EquipmentPage/AddSubPhaseModal';
-import AddItemModal from '../components/EquipmentPage/AddItemModal';
-import EditPhaseModal from '../components/EquipmentPage/EditPhaseModal';
-import EditSubPhaseModal from '../components/EquipmentPage/EditSubPhaseModal';
-import EditItemModal from '../components/EquipmentPage/EditItemModal';
-import EditWellModal from '../components/EquipmentPage/EditWellModal';
-import { API_ENDPOINTS } from '../config/api';
-import type { Well, Item, SiteWithPopulatedWells } from '../types';
 import './EquipmentPage.css';
+
+// Supply Vessel interface
+interface SupplyVessel {
+    id: string;
+    vessel: string;
+    location: string;
+    crewChange: string;
+    fuelOil: number;
+    potWater: number;
+    drlWater: number;
+    barite: number;
+    baseOil: number;
+    cementG: number;
+}
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
     const isAdmin = user?.isAdmin || false;
     const navigate = useNavigate();
-
-    // Get user's home location - this becomes the wellOwner/rig
     const userRig = user?.homeLocation || 'NSC';
 
-    // State
-    const [allWells, setAllWells] = useState<Well[]>([]);
-    const [currentSite, setCurrentSite] = useState<SiteWithPopulatedWells | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [vessels, setVessels] = useState<SupplyVessel[]>([
+        {
+            id: '1',
+            vessel: 'Supply Boat 1',
+            location: 'Dock A',
+            crewChange: 'Scheduled',
+            fuelOil: 150,
+            potWater: 200,
+            drlWater: 100,
+            barite: 50,
+            baseOil: 75,
+            cementG: 30
+        },
+        {
+            id: '2',
+            vessel: 'Supply Boat 2',
+            location: 'Dock B',
+            crewChange: 'Completed',
+            fuelOil: 180,
+            potWater: 220,
+            drlWater: 120,
+            barite: 60,
+            baseOil: 85,
+            cementG: 35
+        },
+        {
+            id: '3',
+            vessel: 'Supply Boat 3',
+            location: 'Offshore',
+            crewChange: 'Pending',
+            fuelOil: 120,
+            potWater: 180,
+            drlWater: 90,
+            barite: 40,
+            baseOil: 65,
+            cementG: 25
+        }
+    ]);
+    
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editData, setEditData] = useState<Partial<SupplyVessel>>({});
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
         message: '',
         severity: 'success'
     });
 
-    // Wells filtered by current user's rig (wellOwner)
-    const [userWells, setUserWells] = useState<Well[]>([]);
-
-    // Active/Next well states - from site data
-    const [activeWell, setActiveWell] = useState<Well | null>(null);
-    const [nextWell, setNextWell] = useState<Well | null>(null);
-
-    // Column count states
-    const [activeWellColumns, setActiveWellColumns] = useState(2);
-    const [nextWellColumns, setNextWellColumns] = useState(2);
-
-    // Modal states
-    const [createWellModalOpen, setCreateWellModalOpen] = useState(false);
-    const [addPhaseModalOpen, setAddPhaseModalOpen] = useState(false);
-    const [addSubPhaseModalOpen, setAddSubPhaseModalOpen] = useState(false);
-    const [addItemModalOpen, setAddItemModalOpen] = useState(false);
-    const [editPhaseModalOpen, setEditPhaseModalOpen] = useState(false);
-    const [editSubPhaseModalOpen, setEditSubPhaseModalOpen] = useState(false);
-    const [editItemModalOpen, setEditItemModalOpen] = useState(false);
-    const [editWellModalOpen, setEditWellModalOpen] = useState(false);
-
-    const [selectedWellForPhase, setSelectedWellForPhase] = useState<Well | null>(null);
-    const [selectedPhaseForSubPhase, setSelectedPhaseForSubPhase] = useState<{ well: Well, phaseIndex: number } | null>(null);
-    const [selectedPhaseForItem, setSelectedPhaseForItem] = useState<{ well: Well, phaseIndex: number, subPhaseIndex: number } | null>(null);
-    const [editingPhase, setEditingPhase] = useState<{ well: Well, phaseIndex: number, phaseName: string } | null>(null);
-    const [editingSubPhase, setEditingSubPhase] = useState<{ well: Well, phaseIndex: number, subPhaseIndex: number, subPhaseName: string } | null>(null);
-    const [editingItem, setEditingItem] = useState<{ well: Well, phaseIndex: number, subPhaseIndex: number, itemIndex: number, item: Item } | null>(null);
-    const [editingWell, setEditingWell] = useState<Well | null>(null);
-
-    // Search/Filter states
-    const [wellSearchAnchor, setWellSearchAnchor] = useState<null | HTMLElement>(null);
-    const [wellSearchType, setWellSearchType] = useState<'active' | 'next' | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
-
-    // Fetch wells and site data on mount
-    useEffect(() => {
-        fetchAllWells();
-        fetchSiteData();
-    }, []);
-
-    // Filter wells when userRig changes or wells are loaded
-    useEffect(() => {
-        if (allWells.length > 0 && userRig) {
-            // Filter wells where wellOwner matches user's home location
-            const filtered = allWells.filter(well =>
-                well.wellOwner.toLowerCase() === userRig.toLowerCase()
-            );
-            setUserWells(filtered);
-        }
-    }, [allWells, userRig]);
-
-    const fetchAllWells = async () => {
+    // Mock data fetching - replace with your actual API calls
+    const fetchDashboardData = async () => {
+        setLoading(true);
         try {
-            const response = await fetch(API_ENDPOINTS.WELLS, {
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-            if (!response.ok) throw new Error('Failed to fetch wells');
-            const data = await response.json();
-            setAllWells(data);
+            // Replace with your actual API endpoint
+            // const response = await fetch(API_ENDPOINTS.DASHBOARD, {
+            //     headers: { 'Authorization': `Bearer ${user?.token}` }
+            // });
+            // const data = await response.json();
+            
+            console.log('Dashboard data fetched');
         } catch (err) {
-            console.error('Failed to fetch wells:', err);
-        }
-    };
-
-    const fetchSiteData = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(API_ENDPOINTS.SITE_WITH_WELLS(userRig), {
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (response.ok) {
-                const data: SiteWithPopulatedWells = await response.json();
-                console.log('Fetched site data:', data);
-                setCurrentSite(data);
-
-                // Set active and next wells directly from the populated data
-                if (data.activeWell) {
-                    setActiveWell(data.activeWell);
-                }
-                if (data.nextWell) {
-                    setNextWell(data.nextWell);
-                }
-            } else if (response.status === 404) {
-                await initializeSite();
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to fetch site data');
+            console.error('Failed to fetch dashboard data:', err);
+            showSnackbar('Failed to load dashboard data', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const initializeSite = async () => {
-        try {
-            // First try to initialize all sites
-            await fetch(API_ENDPOINTS.INITIALIZE_SITES, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            // Then fetch the specific site
-            const response = await fetch(API_ENDPOINTS.SITE_WITH_WELLS(userRig), {
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setCurrentSite(data);
-            }
-        } catch (err) {
-            console.error('Failed to initialize site:', err);
-        }
-    };
-
-    const handleAssignWell = async (well: Well, type: 'active' | 'next') => {
-        try {
-            const endpoint = type === 'active'
-                ? API_ENDPOINTS.SITE_ACTIVE_WELL(userRig)
-                : API_ENDPOINTS.SITE_NEXT_WELL(userRig);
-
-            const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify({ wellId: well._id })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to assign ${type} well`);
-            }
-
-            const updatedSite = await response.json();
-            setCurrentSite(updatedSite);
-
-            if (type === 'active') {
-                setActiveWell(well);
-            } else {
-                setNextWell(well);
-            }
-
-            setWellSearchAnchor(null);
-            showSnackbar(`${type === 'active' ? 'Active' : 'Next'} well assigned successfully`, 'success');
-
-        } catch (err) {
-            console.error(`Failed to assign ${type} well:`, err);
-            setError(`Failed to assign ${type} well. Please try again.`);
-            showSnackbar(`Failed to assign ${type} well`, 'error');
-        }
-    };
-
-    const handleCreateWell = async (wellData: Partial<Well>) => {
-        try {
-            const response = await fetch(API_ENDPOINTS.WELLS, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify({
-                    ...wellData,
-                    wellOwner: userRig
-                })
-            });
-
-            if (response.ok) {
-                const newWell = await response.json();
-                setAllWells(prev => [...prev, newWell]);
-                setCreateWellModalOpen(false);
-                showSnackbar(`Well "${newWell.wellName}" created successfully`, 'success');
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create well');
-            }
-        } catch (err) {
-            console.error('Failed to create well:', err);
-            showSnackbar(err instanceof Error ? err.message : 'Failed to create well', 'error');
-        }
-    };
-
-    const handleCloneWell = async (wellId: string) => {
-        try {
-            const response = await fetch(API_ENDPOINTS.CLONE_WELL(wellId), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to clone well');
-            }
-
-            const data = await response.json();
-            console.log('Well cloned successfully:', data.clonedWell);
-            
-            // Add the cloned well to the allWells state
-            setAllWells(prev => [...prev, data.clonedWell]);
-            
-            showSnackbar(`Well cloned successfully: ${data.clonedWell.wellName}`, 'success');
-            
-        } catch (err) {
-            console.error('Failed to clone well:', err);
-            showSnackbar(err instanceof Error ? err.message : 'Failed to clone well', 'error');
-        }
-    };
-
-    const handleAddPhase = async (wellId: string, phaseName: string) => {
-        try {
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}/phases`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify({ phaseName })
-            });
-
-            if (response.ok) {
-                const updatedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? updatedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(updatedWell);
-                if (nextWell?._id === wellId) setNextWell(updatedWell);
-                setAddPhaseModalOpen(false);
-                showSnackbar(`Phase "${phaseName}" added successfully`, 'success');
-            }
-        } catch (err) {
-            console.error('Failed to add phase:', err);
-            showSnackbar('Failed to add phase', 'error');
-        }
-    };
-
-    const handleUpdatePhase = async (wellId: string, phaseIndex: number, newPhaseName: string) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = { ...well };
-            updatedWell.wellPhases[phaseIndex].phaseName = newPhaseName;
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(savedWell);
-                if (nextWell?._id === wellId) setNextWell(savedWell);
-                setEditPhaseModalOpen(false);
-                setEditingPhase(null);
-                showSnackbar(`Phase updated successfully`, 'success');
-            }
-        } catch (err) {
-            console.error('Failed to update phase:', err);
-            showSnackbar('Failed to update phase', 'error');
-        }
-    };
-
-    const handleDeletePhase = async (wellId: string, phaseIndex: number) => {
-        try {
-            const response = await fetch(API_ENDPOINTS.DELETE_PHASE(wellId, phaseIndex), {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete phase');
-            }
-
-            const data = await response.json();
-            
-            // Update state with the updated well
-            setAllWells(prev => prev.map(w => w._id === wellId ? data.well : w));
-            if (activeWell?._id === wellId) setActiveWell(data.well);
-            if (nextWell?._id === wellId) setNextWell(data.well);
-            
-            showSnackbar('Phase deleted successfully', 'success');
-        } catch (err) {
-            console.error('Failed to delete phase:', err);
-            setError('Failed to delete phase. Please try again.');
-            showSnackbar('Failed to delete phase', 'error');
-        }
-    };
-
-    const handleAddSubPhase = async (wellId: string, phaseIndex: number, subPhaseName: string) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = { ...well };
-            if (!updatedWell.wellPhases[phaseIndex]?.subPhases) {
-                updatedWell.wellPhases[phaseIndex].subPhases = [];
-            }
-
-            updatedWell.wellPhases[phaseIndex].subPhases.push({
-                subPhaseName,
-                items: []
-            });
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(savedWell);
-                if (nextWell?._id === wellId) setNextWell(savedWell);
-                setAddSubPhaseModalOpen(false);
-                showSnackbar(`Subphase "${subPhaseName}" added successfully`, 'success');
-            }
-        } catch (err) {
-            console.error('Failed to add subphase:', err);
-            showSnackbar('Failed to add subphase', 'error');
-        }
-    };
-
-    const handleUpdateSubPhase = async (
-        wellId: string,
-        phaseIndex: number,
-        subPhaseIndex: number,
-        newSubPhaseName: string
-    ) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = { ...well };
-            updatedWell.wellPhases[phaseIndex].subPhases[subPhaseIndex].subPhaseName = newSubPhaseName;
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(savedWell);
-                if (nextWell?._id === wellId) setNextWell(savedWell);
-                setEditSubPhaseModalOpen(false);
-                setEditingSubPhase(null);
-                showSnackbar('Subphase updated successfully', 'success');
-            }
-        } catch (err) {
-            console.error('Failed to update subphase:', err);
-            showSnackbar('Failed to update subphase', 'error');
-        }
-    };
-
-    const handleDeleteSubPhase = async (wellId: string, phaseIndex: number, subPhaseIndex: number) => {
-        try {
-            const response = await fetch(API_ENDPOINTS.DELETE_SUBPHASE(wellId, phaseIndex, subPhaseIndex), {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete subphase');
-            }
-
-            const data = await response.json();
-            
-            // Update state with the updated well
-            setAllWells(prev => prev.map(w => w._id === wellId ? data.well : w));
-            if (activeWell?._id === wellId) setActiveWell(data.well);
-            if (nextWell?._id === wellId) setNextWell(data.well);
-            
-            showSnackbar('Subphase deleted successfully', 'success');
-        } catch (err) {
-            console.error('Failed to delete subphase:', err);
-            setError('Failed to delete subphase. Please try again.');
-            showSnackbar('Failed to delete subphase', 'error');
-        }
-    };
-
-    const handleAddItem = async (
-        wellId: string,
-        phaseIndex: number,
-        subPhaseIndex: number,
-        itemData: any
-    ) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = { ...well };
-            if (!updatedWell.wellPhases[phaseIndex]?.subPhases[subPhaseIndex]?.items) {
-                updatedWell.wellPhases[phaseIndex].subPhases[subPhaseIndex].items = [];
-            }
-
-            updatedWell.wellPhases[phaseIndex].subPhases[subPhaseIndex].items.push(itemData);
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(savedWell);
-                if (nextWell?._id === wellId) setNextWell(savedWell);
-                setAddItemModalOpen(false);
-                showSnackbar('Item added successfully', 'success');
-            }
-        } catch (err) {
-            console.error('Failed to add item:', err);
-            showSnackbar('Failed to add item', 'error');
-        }
-    };
-
-    const handleUpdateItem = async (
-        wellId: string,
-        phaseIndex: number,
-        subPhaseIndex: number,
-        itemIndex: number,
-        itemData: any
-    ) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = { ...well };
-            updatedWell.wellPhases[phaseIndex].subPhases[subPhaseIndex].items[itemIndex] = {
-                ...updatedWell.wellPhases[phaseIndex].subPhases[subPhaseIndex].items[itemIndex],
-                ...itemData
-            };
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-                if (activeWell?._id === wellId) setActiveWell(savedWell);
-                if (nextWell?._id === wellId) setNextWell(savedWell);
-                setEditItemModalOpen(false);
-                setEditingItem(null);
-                showSnackbar('Item updated successfully', 'success');
-            }
-        } catch (err) {
-            console.error('Failed to update item:', err);
-            showSnackbar('Failed to update item', 'error');
-        }
-    };
-
-    const handleDeleteItem = async (wellId: string, phaseIndex: number, subPhaseIndex: number, itemIndex: number) => {
-        try {
-            const response = await fetch(API_ENDPOINTS.DELETE_ITEM(wellId, phaseIndex, subPhaseIndex, itemIndex), {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${user?.token}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete item');
-            }
-
-            const data = await response.json();
-            
-            // Update state with the updated well
-            setAllWells(prev => prev.map(w => w._id === wellId ? data.well : w));
-            if (activeWell?._id === wellId) setActiveWell(data.well);
-            if (nextWell?._id === wellId) setNextWell(data.well);
-            
-            showSnackbar('Item deleted successfully', 'success');
-        } catch (err) {
-            console.error('Failed to delete item:', err);
-            setError('Failed to delete item. Please try again.');
-            showSnackbar('Failed to delete item', 'error');
-        }
-    };
-
-    const handleUpdateWell = async (wellId: string, wellData: { wellName: string; wellAFE: string }) => {
-        try {
-            const well = allWells.find(w => w._id === wellId);
-            if (!well) return;
-
-            const updatedWell = {
-                ...well,
-                wellName: wellData.wellName,
-                wellAFE: wellData.wellAFE
-            };
-
-            const response = await fetch(`${API_ENDPOINTS.WELLS}/${wellId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(updatedWell)
-            });
-
-            if (response.ok) {
-                const savedWell = await response.json();
-
-                // Update allWells
-                setAllWells(prev => prev.map(w => w._id === wellId ? savedWell : w));
-
-                // Update activeWell if it's the one being edited
-                if (activeWell && activeWell._id === wellId) {
-                    setActiveWell(savedWell);
-                }
-
-                // Update nextWell if it's the one being edited
-                if (nextWell && nextWell._id === wellId) {
-                    setNextWell(savedWell);
-                }
-
-                // Also update the site data to ensure consistency
-                if (currentSite) {
-                    const updatedSite = { ...currentSite };
-
-                    // Check if activeWell exists and is an object before accessing _id
-                    if (currentSite.activeWell &&
-                        typeof currentSite.activeWell === 'object' &&
-                        '_id' in currentSite.activeWell &&
-                        currentSite.activeWell._id === wellId) {
-                        updatedSite.activeWell = savedWell;
-                    }
-
-                    // Check if nextWell exists and is an object before accessing _id
-                    if (currentSite.nextWell &&
-                        typeof currentSite.nextWell === 'object' &&
-                        '_id' in currentSite.nextWell &&
-                        currentSite.nextWell._id === wellId) {
-                        updatedSite.nextWell = savedWell;
-                    }
-
-                    setCurrentSite(updatedSite);
-                }
-
-                setEditWellModalOpen(false);
-                setEditingWell(null);
-                showSnackbar('Well updated successfully', 'success');
-            }
-        } catch (err) {
-            console.error('Failed to update well:', err);
-            showSnackbar('Failed to update well', 'error');
-        }
-    };
-
-    const handleMovePhase = (well: Well, phaseIndex: number, direction: 'up' | 'down') => {
-        if (!isAdmin) return;
-
-        const newPhaseIndex = direction === 'up' ? phaseIndex - 1 : phaseIndex + 1;
-        if (newPhaseIndex < 0 || newPhaseIndex >= well.wellPhases.length) return;
-
-        const updatedWell = { ...well };
-        const phases = [...updatedWell.wellPhases];
-        [phases[phaseIndex], phases[newPhaseIndex]] = [phases[newPhaseIndex], phases[phaseIndex]];
-        updatedWell.wellPhases = phases;
-
-        fetch(`${API_ENDPOINTS.WELLS}/${well._id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${user?.token}`
-            },
-            body: JSON.stringify(updatedWell)
-        }).then(response => {
-            if (response.ok) {
-                setAllWells(prev => prev.map(w => w._id === well._id ? updatedWell : w));
-                if (activeWell?._id === well._id) setActiveWell(updatedWell);
-                if (nextWell?._id === well._id) setNextWell(updatedWell);
-                showSnackbar('Phase reordered successfully', 'success');
-            }
-        }).catch(err => {
-            console.error('Failed to reorder phases:', err);
-            showSnackbar('Failed to reorder phases', 'error');
-        });
-    };
-
-    const handleMoveSubPhase = (well: Well, phaseIndex: number, subPhaseIndex: number, direction: 'up' | 'down') => {
-        if (!isAdmin) return;
-
-        const newSubPhaseIndex = direction === 'up' ? subPhaseIndex - 1 : subPhaseIndex + 1;
-        if (newSubPhaseIndex < 0 || newSubPhaseIndex >= well.wellPhases[phaseIndex].subPhases.length) return;
-
-        const updatedWell = { ...well };
-        const subPhases = [...updatedWell.wellPhases[phaseIndex].subPhases];
-        [subPhases[subPhaseIndex], subPhases[newSubPhaseIndex]] = [subPhases[newSubPhaseIndex], subPhases[subPhaseIndex]];
-        updatedWell.wellPhases[phaseIndex].subPhases = subPhases;
-
-        fetch(`${API_ENDPOINTS.WELLS}/${well._id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${user?.token}`
-            },
-            body: JSON.stringify(updatedWell)
-        }).then(response => {
-            if (response.ok) {
-                setAllWells(prev => prev.map(w => w._id === well._id ? updatedWell : w));
-                if (activeWell?._id === well._id) setActiveWell(updatedWell);
-                if (nextWell?._id === well._id) setNextWell(updatedWell);
-                showSnackbar('Subphase reordered successfully', 'success');
-            }
-        }).catch(err => {
-            console.error('Failed to reorder subphases:', err);
-            showSnackbar('Failed to reorder subphases', 'error');
-        });
-    };
+    useEffect(() => {
+        fetchDashboardData();
+    }, []);
 
     const showSnackbar = (message: string, severity: 'success' | 'error') => {
         setSnackbar({ open: true, message, severity });
@@ -694,37 +113,92 @@ const EquipmentPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    // Filter wells for search
-    const filteredWells = userWells.filter(well =>
-        well.wellName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        well.wellAFE.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleRefresh = () => {
+        fetchDashboardData();
+        showSnackbar('Dashboard refreshed', 'success');
+    };
 
-    if (loading) return <div className="loading-container">Loading equipment data...</div>;
-    if (error) return <div className="error-container">Error: {error}</div>;
+    // Supply Vessel CRUD operations
+    const handleAddVessel = () => {
+        const newVessel: SupplyVessel = {
+            id: Date.now().toString(),
+            vessel: 'New Vessel',
+            location: 'Dock',
+            crewChange: 'Scheduled',
+            fuelOil: 0,
+            potWater: 0,
+            drlWater: 0,
+            barite: 0,
+            baseOil: 0,
+            cementG: 0
+        };
+        setVessels([...vessels, newVessel]);
+        setEditingId(newVessel.id);
+        setEditData(newVessel);
+        showSnackbar('New vessel row added', 'success');
+    };
+
+    const handleDeleteVessel = (id: string) => {
+        setVessels(vessels.filter(v => v.id !== id));
+        showSnackbar('Vessel deleted', 'success');
+    };
+
+    const handleStartEdit = (vessel: SupplyVessel) => {
+        setEditingId(vessel.id);
+        setEditData(vessel);
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setEditData({});
+    };
+
+    const handleSaveEdit = () => {
+        if (editingId && editData) {
+            setVessels(vessels.map(v => 
+                v.id === editingId ? { ...v, ...editData } : v
+            ));
+            setEditingId(null);
+            setEditData({});
+            showSnackbar('Vessel updated successfully', 'success');
+        }
+    };
+
+    const handleInputChange = (field: keyof SupplyVessel, value: string | number) => {
+        setEditData({
+            ...editData,
+            [field]: value
+        });
+    };
+
+    if (loading && !vessels.length) {
+        return (
+            <div className="equipment-container">
+                <div className="loading-container">Loading dashboard...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="equipment-container">
-            {/* Header */}
+            {/* Header - Stays at top */}
             <AppBar position="static" className="equipment-header">
                 <Toolbar className="header-toolbar">
                     <Box className="header-left">
+                        <Dashboard className="header-icon" />
                         <Typography variant="h6" className="header-title">
-                            Wells Equipment List - {userRig}
+                            Dashboard - {userRig}
                         </Typography>
 
-                        {/* Create Well Button */}
-                        {isAdmin && (
-                            <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<Add />}
-                                onClick={() => setCreateWellModalOpen(true)}
-                                className="create-well-btn"
-                            >
-                                New Well
-                            </Button>
-                        )}
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<Refresh />}
+                            onClick={handleRefresh}
+                            className="refresh-btn"
+                        >
+                            Refresh
+                        </Button>
                     </Box>
 
                     <Box className="header-right">
@@ -746,391 +220,247 @@ const EquipmentPage = () => {
                             {isAdmin && " (admin)"}
                         </Typography>
 
-                        <Button variant="text" onClick={logout} size="small" className="logout-btn">
+                        <Button variant="text" onClick={logout} size="small" className="logout-btn" startIcon={<ExitToApp />}>
                             Logout
                         </Button>
                     </Box>
                 </Toolbar>
             </AppBar>
 
-            {/* Main Content - Split View */}
-            <Box className="main-content">
-                {/* Active Well Section */}
-                <Box className="well-section active-well-section">
-                    <Box className="well-header">
-                        <Box className="well-title-container">
-                            <Typography variant="h6" className="well-title">
-                                ACTIVE WELL
-                            </Typography>
-                            {activeWell && (
-                                <>
-                                    <Box className="well-name-afe-group">
-                                        <Typography variant="h6" className="well-name">
-                                            {activeWell.wellName}
-                                        </Typography>
-                                        <Typography variant="h6" className="well-colon">
-                                            :
-                                        </Typography>
-                                        <Typography variant="h6" className="well-afe">
-                                            {activeWell.wellAFE}
-                                        </Typography>
-                                    </Box>
-                                    {/* Edit button after AFE */}
-                                    {isAdmin && (
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setEditingWell(activeWell);
-                                                setEditWellModalOpen(true);
-                                            }}
-                                            className="well-edit-btn"
-                                            title="Edit Well"
-                                        >
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                    )}
-                                </>
-                            )}
-                        </Box>
-
-                        <Box className="well-header-controls">
-                            <Button
-                                size="small"
-                                startIcon={<Search />}
-                                onClick={(e) => {
-                                    setWellSearchAnchor(e.currentTarget);
-                                    setWellSearchType('active');
-                                    setSearchTerm('');
-                                }}
-                                className="assign-well-btn"
-                                disabled={userWells.length === 0}
-                            >
-                                {activeWell ? 'Change' : 'Assign Well'}
-                            </Button>
-
-                            {/* Add Phase Button in header */}
-                            {isAdmin && activeWell && (
-                                <Button
-                                    size="small"
-                                    startIcon={<Add />}
-                                    onClick={() => {
-                                        setSelectedWellForPhase(activeWell);
-                                        setAddPhaseModalOpen(true);
-                                    }}
-                                    className="add-phase-header-btn"
-                                >
-                                    Phase
-                                </Button>
-                            )}
-
-                            {/* Column selector */}
-                            <FormControl size="small" className="column-selector">
-                                <Select
-                                    value={activeWellColumns}
-                                    onChange={(e) => setActiveWellColumns(Number(e.target.value))}
-                                    displayEmpty
-                                >
-                                    {[1, 2, 3, 4].map(num => (
-                                        <MenuItem key={num} value={num}>{num} col</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    </Box>
-
-                    {activeWell ? (
-                        <WellColumn
-                            well={activeWell}
-                            columnCount={activeWellColumns}
-                            onAddPhase={(well) => {
-                                setSelectedWellForPhase(well);
-                                setAddPhaseModalOpen(true);
-                            }}
-                            onAddSubPhase={(well, phaseIndex) => {
-                                setSelectedPhaseForSubPhase({ well, phaseIndex });
-                                setAddSubPhaseModalOpen(true);
-                            }}
-                            onAddItem={(well, phaseIndex, subPhaseIndex) => {
-                                setSelectedPhaseForItem({ well, phaseIndex, subPhaseIndex });
-                                setAddItemModalOpen(true);
-                            }}
-                            onEditPhase={(well, phaseIndex, phaseName) => {
-                                setEditingPhase({ well, phaseIndex, phaseName });
-                                setEditPhaseModalOpen(true);
-                            }}
-                            onEditSubPhase={(well, phaseIndex, subPhaseIndex, subPhaseName) => {
-                                setEditingSubPhase({ well, phaseIndex, subPhaseIndex, subPhaseName });
-                                setEditSubPhaseModalOpen(true);
-                            }}
-                            onEditItem={(well, phaseIndex, subPhaseIndex, itemIndex, item) => {
-                                setEditingItem({ well, phaseIndex, subPhaseIndex, itemIndex, item });
-                                setEditItemModalOpen(true);
-                            }}
-                            onMovePhase={handleMovePhase}
-                            onMoveSubPhase={handleMoveSubPhase}
-                            isAdmin={isAdmin}
-                        />
-                    ) : (
-                        <Box className="empty-well-message">
-                            <Typography>No active well assigned for {userRig}</Typography>
-                            {userWells.length === 0 && (
-                                <Typography variant="caption" sx={{ mt: 1, color: '#999' }}>
-                                    Create a new well first
-                                </Typography>
-                            )}
-                        </Box>
-                    )}
-                </Box>
-
-                {/* Vertical Divider */}
-                <Divider orientation="vertical" flexItem className="wells-divider" />
-
-                {/* Next Well Section */}
-                <Box className="well-section next-well-section">
-                    <Box className="well-header">
-                        <Box className="well-title-container">
-                            <Typography variant="h6" className="well-title">
-                                NEXT WELL
-                            </Typography>
-                            {nextWell && (
-                                <>
-                                    <Box className="well-name-afe-group">
-                                        <Typography variant="h6" className="well-name">
-                                            {nextWell.wellName}
-                                        </Typography>
-                                        <Typography variant="h6" className="well-colon">
-                                            :
-                                        </Typography>
-                                        <Typography variant="h6" className="well-afe">
-                                            {nextWell.wellAFE}
-                                        </Typography>
-                                    </Box>
-                                    {/* Edit button after AFE */}
-                                    {isAdmin && (
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => {
-                                                setEditingWell(nextWell);
-                                                setEditWellModalOpen(true);
-                                            }}
-                                            className="well-edit-btn"
-                                            title="Edit Well"
-                                        >
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                    )}
-                                </>
-                            )}
-                        </Box>
-
-                        <Box className="well-header-controls">
-                            <Button
-                                size="small"
-                                startIcon={<Search />}
-                                onClick={(e) => {
-                                    setWellSearchAnchor(e.currentTarget);
-                                    setWellSearchType('next');
-                                    setSearchTerm('');
-                                }}
-                                className="assign-well-btn"
-                                disabled={userWells.length === 0}
-                            >
-                                {nextWell ? 'Change' : 'Assign Well'}
-                            </Button>
-
-                            {/* Add Phase Button in header */}
-                            {isAdmin && nextWell && (
-                                <Button
-                                    size="small"
-                                    startIcon={<Add />}
-                                    onClick={() => {
-                                        setSelectedWellForPhase(nextWell);
-                                        setAddPhaseModalOpen(true);
-                                    }}
-                                    className="add-phase-header-btn"
-                                >
-                                    Phase
-                                </Button>
-                            )}
-
-                            {/* Column selector */}
-                            <FormControl size="small" className="column-selector">
-                                <Select
-                                    value={nextWellColumns}
-                                    onChange={(e) => setNextWellColumns(Number(e.target.value))}
-                                    displayEmpty
-                                >
-                                    {[1, 2, 3, 4].map(num => (
-                                        <MenuItem key={num} value={num}>{num} col</MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        </Box>
-                    </Box>
-
-                    {nextWell ? (
-                        <WellColumn
-                            well={nextWell}
-                            columnCount={nextWellColumns}
-                            onAddPhase={(well) => {
-                                setSelectedWellForPhase(well);
-                                setAddPhaseModalOpen(true);
-                            }}
-                            onAddSubPhase={(well, phaseIndex) => {
-                                setSelectedPhaseForSubPhase({ well, phaseIndex });
-                                setAddSubPhaseModalOpen(true);
-                            }}
-                            onAddItem={(well, phaseIndex, subPhaseIndex) => {
-                                setSelectedPhaseForItem({ well, phaseIndex, subPhaseIndex });
-                                setAddItemModalOpen(true);
-                            }}
-                            onEditPhase={(well, phaseIndex, phaseName) => {
-                                setEditingPhase({ well, phaseIndex, phaseName });
-                                setEditPhaseModalOpen(true);
-                            }}
-                            onEditSubPhase={(well, phaseIndex, subPhaseIndex, subPhaseName) => {
-                                setEditingSubPhase({ well, phaseIndex, subPhaseIndex, subPhaseName });
-                                setEditSubPhaseModalOpen(true);
-                            }}
-                            onEditItem={(well, phaseIndex, subPhaseIndex, itemIndex, item) => {
-                                setEditingItem({ well, phaseIndex, subPhaseIndex, itemIndex, item });
-                                setEditItemModalOpen(true);
-                            }}
-                            onMovePhase={handleMovePhase}
-                            onMoveSubPhase={handleMoveSubPhase}
-                            isAdmin={isAdmin}
-                        />
-                    ) : (
-                        <Box className="empty-well-message">
-                            <Typography>No next well assigned for {userRig}</Typography>
-                        </Box>
-                    )}
-                </Box>
-            </Box>
-
-            {/* Well Search Popover */}
-            <Popover
-                open={Boolean(wellSearchAnchor)}
-                anchorEl={wellSearchAnchor}
-                onClose={() => setWellSearchAnchor(null)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-            >
-                <Box className="well-search-popover">
-                    <TextField
-                        size="small"
-                        placeholder="Search wells..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        autoFocus
-                        fullWidth
-                    />
-                    <Box className="well-search-results">
-                        {filteredWells.length > 0 ? (
-                            filteredWells.map(well => (
-                                <MenuItem
-                                    key={well._id}
-                                    onClick={() => wellSearchType && handleAssignWell(well, wellSearchType)}
-                                    className="well-search-item"
-                                >
-                                    <Typography variant="body2" className="well-search-name">
-                                        {well.wellName}
+            {/* Main Content - Dynamic layout */}
+            <div className="main-content">
+                {/* TOP SECTION - Takes remaining space */}
+                <div className="top-section">
+                    <div className="three-column-layout">
+                        {/* Left Column - Well Information (25%) */}
+                        <div className="column left-column">
+                            <Paper className="info-panel" elevation={3}>
+                                <div className="panel-header">
+                                    <Typography variant="h6" className="panel-title">
+                                        Well Information
                                     </Typography>
-                                    <Typography variant="caption" className="well-search-afe">
-                                        {well.wellAFE}
+                                </div>
+                                <Divider />
+                                <div className="panel-content">
+                                    <Typography variant="body2" color="textSecondary" className="placeholder-text">
+                                        Well details will appear here
                                     </Typography>
-                                </MenuItem>
-                            ))
-                        ) : (
-                            <Typography variant="body2" className="no-results">
-                                No wells found for {userRig}
+                                </div>
+                            </Paper>
+                        </div>
+
+                        {/* Middle Column - Mud Pit Capacities & Fluid Data (50%) */}
+                        <div className="column middle-column">
+                            <Paper className="info-panel" elevation={3}>
+                                <div className="panel-header">
+                                    <Typography variant="h6" className="panel-title">
+                                        Mud Pit Capacities & Fluid Data
+                                    </Typography>
+                                </div>
+                                <Divider />
+                                <div className="panel-content">
+                                    <Typography variant="body2" color="textSecondary" className="placeholder-text">
+                                        Mud pit and fluid data will appear here
+                                    </Typography>
+                                </div>
+                            </Paper>
+                        </div>
+
+                        {/* Right Column - Last Updated (25%) */}
+                        <div className="column right-column">
+                            <Paper className="info-panel" elevation={3}>
+                                <div className="panel-header">
+                                    <Typography variant="h6" className="panel-title">
+                                        Last Updated
+                                    </Typography>
+                                </div>
+                                <Divider />
+                                <div className="panel-content">
+                                    <Typography variant="body2" color="textSecondary" className="placeholder-text">
+                                        Recent updates will appear here
+                                    </Typography>
+                                </div>
+                            </Paper>
+                        </div>
+                    </div>
+                </div>
+
+                {/* BOTTOM SECTION - Height determined by content */}
+                <div className="bottom-section">
+                    <Paper className="vessels-panel" elevation={3}>
+                        <div className="vessels-header">
+                            <Typography variant="h6" className="vessels-title">
+                                Supply Vessels
                             </Typography>
-                        )}
-                    </Box>
-                </Box>
-            </Popover>
-
-            {/* Modals */}
-            <CreateWellModal
-                isOpen={createWellModalOpen}
-                onClose={() => setCreateWellModalOpen(false)}
-                onSubmit={handleCreateWell}
-                onCloneWell={handleCloneWell}
-                currentLocation={userRig}
-                loading={loading}
-            />
-
-            <AddPhaseModal
-                isOpen={addPhaseModalOpen}
-                onClose={() => {
-                    setAddPhaseModalOpen(false);
-                    setSelectedWellForPhase(null);
-                }}
-                well={selectedWellForPhase}
-                onSubmit={handleAddPhase}
-            />
-
-            <AddSubPhaseModal
-                isOpen={addSubPhaseModalOpen}
-                onClose={() => {
-                    setAddSubPhaseModalOpen(false);
-                    setSelectedPhaseForSubPhase(null);
-                }}
-                phaseInfo={selectedPhaseForSubPhase}
-                onSubmit={handleAddSubPhase}
-            />
-
-            <AddItemModal
-                isOpen={addItemModalOpen}
-                onClose={() => {
-                    setAddItemModalOpen(false);
-                    setSelectedPhaseForItem(null);
-                }}
-                phaseInfo={selectedPhaseForItem}
-                onSubmit={handleAddItem}
-            />
-
-            <EditPhaseModal
-                isOpen={editPhaseModalOpen}
-                onClose={() => {
-                    setEditPhaseModalOpen(false);
-                    setEditingPhase(null);
-                }}
-                phaseInfo={editingPhase}
-                onSubmit={handleUpdatePhase}
-                onDelete={isAdmin ? handleDeletePhase : undefined}
-            />
-
-            <EditSubPhaseModal
-                isOpen={editSubPhaseModalOpen}
-                onClose={() => {
-                    setEditSubPhaseModalOpen(false);
-                    setEditingSubPhase(null);
-                }}
-                subPhaseInfo={editingSubPhase}
-                onSubmit={handleUpdateSubPhase}
-                onDelete={isAdmin ? handleDeleteSubPhase : undefined}
-            />
-
-            <EditItemModal
-                isOpen={editItemModalOpen}
-                onClose={() => {
-                    setEditItemModalOpen(false);
-                    setEditingItem(null);
-                }}
-                itemInfo={editingItem}
-                onSubmit={handleUpdateItem}
-                onDelete={isAdmin ? handleDeleteItem : undefined}
-            />
-
-            <EditWellModal
-                isOpen={editWellModalOpen}
-                onClose={() => {
-                    setEditWellModalOpen(false);
-                    setEditingWell(null);
-                }}
-                well={editingWell}
-                onSubmit={handleUpdateWell}
-            />
+                            <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<Add />}
+                                onClick={handleAddVessel}
+                                className="add-vessel-btn"
+                            >
+                                Add Vessel
+                            </Button>
+                        </div>
+                        <Divider />
+                        <TableContainer className="vessels-table-container">
+                            <Table stickyHeader size="small" className="vessels-table">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell className="table-header-cell">VESSEL</TableCell>
+                                        <TableCell className="table-header-cell">LOCATION</TableCell>
+                                        <TableCell className="table-header-cell">CREW CHANGE</TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            FUEL OIL <span className="unit-text">(m³)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            POT WATER <span className="unit-text">(m³)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            DRL WATER <span className="unit-text">(m³)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            BARITE <span className="unit-text">(mt)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            BASE OIL <span className="unit-text">(m³)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell" align="center">
+                                            CEMENT G <span className="unit-text">(mt)</span>
+                                        </TableCell>
+                                        <TableCell className="table-header-cell actions-header">ACTIONS</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {vessels.map((vessel) => (
+                                        <TableRow key={vessel.id} hover>
+                                            {editingId === vessel.id ? (
+                                                // Edit mode
+                                                <>
+                                                    <TableCell>
+                                                        <TextField
+                                                            size="small"
+                                                            value={editData.vessel || ''}
+                                                            onChange={(e) => handleInputChange('vessel', e.target.value)}
+                                                            fullWidth
+                                                            autoFocus
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <TextField
+                                                            size="small"
+                                                            value={editData.location || ''}
+                                                            onChange={(e) => handleInputChange('location', e.target.value)}
+                                                            fullWidth
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <TextField
+                                                            size="small"
+                                                            value={editData.crewChange || ''}
+                                                            onChange={(e) => handleInputChange('crewChange', e.target.value)}
+                                                            fullWidth
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.fuelOil || 0}
+                                                            onChange={(e) => handleInputChange('fuelOil', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.potWater || 0}
+                                                            onChange={(e) => handleInputChange('potWater', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.drlWater || 0}
+                                                            onChange={(e) => handleInputChange('drlWater', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.barite || 0}
+                                                            onChange={(e) => handleInputChange('barite', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.baseOil || 0}
+                                                            onChange={(e) => handleInputChange('baseOil', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            value={editData.cementG || 0}
+                                                            onChange={(e) => handleInputChange('cementG', parseFloat(e.target.value) || 0)}
+                                                            sx={{ width: 80 }}
+                                                            inputProps={{ style: { textAlign: 'center' } }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <MuiIconButton size="small" onClick={handleSaveEdit} color="primary">
+                                                            <Save fontSize="small" />
+                                                        </MuiIconButton>
+                                                        <MuiIconButton size="small" onClick={handleCancelEdit} color="secondary">
+                                                            <Cancel fontSize="small" />
+                                                        </MuiIconButton>
+                                                    </TableCell>
+                                                </>
+                                            ) : (
+                                                // View mode
+                                                <>
+                                                    <TableCell className="table-body-cell">{vessel.vessel}</TableCell>
+                                                    <TableCell className="table-body-cell">{vessel.location}</TableCell>
+                                                    <TableCell className="table-body-cell">{vessel.crewChange}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.fuelOil}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.potWater}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.drlWater}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.barite}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.baseOil}</TableCell>
+                                                    <TableCell align="center" className="table-body-cell">{vessel.cementG}</TableCell>
+                                                    <TableCell align="center">
+                                                        <MuiIconButton size="small" onClick={() => handleStartEdit(vessel)} color="primary">
+                                                            <Edit fontSize="small" />
+                                                        </MuiIconButton>
+                                                        <MuiIconButton size="small" onClick={() => handleDeleteVessel(vessel.id)} color="error">
+                                                            <Delete fontSize="small" />
+                                                        </MuiIconButton>
+                                                    </TableCell>
+                                                </>
+                                            )}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </div>
+            </div>
 
             {/* Snackbar for notifications */}
             <Snackbar
