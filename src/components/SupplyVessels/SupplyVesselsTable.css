@@ -1,0 +1,115 @@
+/* src/components/SupplyVessels/SupplyVesselsTable.css */
+
+.vessels-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    width: 100%;
+}
+
+.vessels-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f5f5f5;
+    flex-shrink: 0;
+}
+
+.vessels-title {
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    color: #333;
+}
+
+.add-vessel-btn {
+    background-color: #4caf50 !important;
+    color: white !important;
+    text-transform: none !important;
+    font-size: 0.75rem !important;
+    padding: 4px 10px !important;
+    min-height: 28px !important;
+}
+
+.add-vessel-btn:hover {
+    background-color: #45a049 !important;
+}
+
+.vessels-table-container {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.vessels-table {
+    min-width: 1100px;
+    width: 100%;
+}
+
+.table-header-cell {
+    font-weight: 700 !important;
+    background-color: #e8e8e8 !important;
+    font-size: 0.75rem !important;
+    padding: 6px 4px !important;
+    white-space: nowrap;
+    line-height: 1.2 !important;
+    text-align: center !important;
+}
+
+.table-header-cell:first-child {
+    padding-left: 8px !important;
+    text-align: left !important;
+}
+
+.table-header-cell:nth-child(2) {
+    text-align: left !important;
+}
+
+.table-header-cell:nth-child(3) {
+    text-align: left !important;
+}
+
+.unit-text {
+    font-size: 0.65rem;
+    font-weight: normal;
+    color: #555;
+    margin-left: 4px;
+}
+
+.table-body-cell {
+    font-size: 0.75rem !important;
+    padding: 4px 4px !important;
+}
+
+.table-body-cell:first-child {
+    padding-left: 8px !important;
+}
+
+.actions-header {
+    text-align: center;
+    min-width: 70px;
+}
+
+.vessels-table .MuiTableCell-root {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.vessels-table .MuiTextField-root {
+    margin: 0;
+}
+
+.vessels-table .MuiInputBase-root {
+    font-size: 0.75rem !important;
+}
+
+.vessels-table .MuiOutlinedInput-input {
+    padding: 4px 6px !important;
+}
+
+.vessels-table .MuiIconButton-root {
+    padding: 2px;
+    margin: 0 2px;
+}
+
+.vessels-table .MuiIconButton-sizeSmall {
+    padding: 2px;
+}
