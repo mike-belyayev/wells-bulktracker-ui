@@ -6,7 +6,7 @@
     flex-direction: column;
     overflow: hidden;
     background-color: white !important;
-    border-radius: 8px;
+    border-radius: 4px;
 }
 
 .panel-header {
@@ -18,7 +18,7 @@
 
 .panel-title {
     font-weight: 700 !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     color: white !important;
     text-align: center;
     letter-spacing: 0.5px;
@@ -28,52 +28,52 @@
 .fluid-content {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    overflow-x: hidden;
+    padding: 8px;
     background: #f8f9fa;
 }
 
-/* More compact grid */
+/* 4 column grid */
 .pit-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
     align-items: start;
 }
 
-/* Compact card design */
+/* Card design */
 .pit-card {
     background: white;
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s ease;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
 }
 
 .pit-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Compact inverted header */
+/* Header */
 .pit-header {
-    padding: 6px 8px;
+    padding: 4px 6px;
     background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
     text-align: center;
 }
 
 .pit-name {
     font-weight: 800 !important;
-    font-size: 0.7rem !important;
+    font-size: 0.6rem !important;
     color: white !important;
     letter-spacing: 0.3px;
     text-transform: uppercase;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-/* Compact card body */
+/* Body */
 .pit-details {
-    padding: 6px 8px;
+    padding: 4px 6px;
     background: white;
 }
 
@@ -81,7 +81,7 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     padding-bottom: 2px;
     border-bottom: 1px solid #f0f0f0;
 }
@@ -93,7 +93,7 @@
 }
 
 .pit-label {
-    font-size: 0.55rem !important;
+    font-size: 0.5rem !important;
     font-weight: 700 !important;
     color: #95a5a6;
     text-transform: uppercase;
@@ -101,13 +101,13 @@
 }
 
 .pit-value {
-    font-size: 0.65rem !important;
+    font-size: 0.55rem !important;
     font-weight: 700 !important;
     font-family: 'Courier New', monospace;
     color: #2c3e50;
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 .fluid-content::-webkit-scrollbar {
     width: 4px;
 }
@@ -122,76 +122,7 @@
     border-radius: 2px;
 }
 
-/* Responsive - fewer columns on smaller screens */
-@media (max-width: 1400px) {
-    .pit-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-    }
-}
-
-@media (max-width: 1100px) {
-    .pit-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-}
-
-@media (max-width: 800px) {
-    .pit-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-    }
-    
-    .fluid-content {
-        padding: 8px;
-    }
-}
-
-@media (max-width: 500px) {
-    .pit-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* For very large screens - keep compact */
-@media (min-width: 2560px) {
-    .pit-grid {
-        grid-template-columns: repeat(6, 1fr);
-        gap: 10px;
-    }
-    
-    .fluid-content {
-        padding: 12px;
-    }
-    
-    .pit-header {
-        padding: 8px 10px;
-    }
-    
-    .pit-name {
-        font-size: 0.8rem !important;
-    }
-    
-    .pit-details {
-        padding: 8px 10px;
-    }
-    
-    .pit-label {
-        font-size: 0.6rem !important;
-    }
-    
-    .pit-value {
-        font-size: 0.7rem !important;
-    }
-}
-
-/* Ensure no overflow */
-.fluid-content {
-    overflow-y: auto;
-}
-
-/* Gradient border on hover */
+/* Hover border effect */
 .pit-card {
     position: relative;
 }
@@ -210,4 +141,54 @@
 
 .pit-card:hover::before {
     opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 1400px) {
+    .pit-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .pit-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+}
+
+@media (max-width: 800px) {
+    .pit-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .fluid-content {
+        padding: 6px;
+    }
+}
+
+@media (max-width: 500px) {
+    .pit-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 2560px) {
+    .pit-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+    }
+    
+    .pit-name {
+        font-size: 0.75rem !important;
+    }
+    
+    .pit-label {
+        font-size: 0.6rem !important;
+    }
+    
+    .pit-value {
+        font-size: 0.7rem !important;
+    }
 }

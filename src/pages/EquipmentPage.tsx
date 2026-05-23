@@ -7,7 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Dashboard';
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
-
+import CargoView from '../components/Cargo/CargoView';
 // Import types from LastUpdated
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
 // Import CasingProfile type from WellInformation
@@ -216,28 +216,33 @@ const EquipmentPage = () => {
             {/* Main Content - Dynamic layout */}
             <div className="main-content">
                 {/* TOP SECTION - Takes remaining space */}
-                <div className="top-section">
-                    <div className="three-column-layout">
-                        {/* Left Column - Well Information (25%) */}
-                        <div className="column left-column">
-                            <WellInformation wellData={wellData} />
-                        </div>
+<div className="top-section">
+    <div className="four-column-layout">
+        {/* Column 1: Well Information (15%) */}
+        <div className="column col-well">
+            <WellInformation wellData={wellData} />
+        </div>
 
-                        {/* Middle Column - Mud Pit Capacities & Fluid Data (50%) */}
-                        <div className="column middle-column">
-                            <MudPitFluidData fluidData={fluidData} />
-                        </div>
+        {/* Column 2: Mud Pit Data (55% - increased from 50% to 55%) */}
+        <div className="column col-mud">
+            <MudPitFluidData fluidData={fluidData} />
+        </div>
 
-                        {/* Right Column - Last Updated (25%) */}
-                        <div className="column right-column">
-                            <LastUpdated 
-                                lastUpdatedDate={lastUpdatedDate}
-                                bopSystemsData={bopSystemsData}
-                                mudPumpLinersData={mudPumpLinersData}
-                            />
-                        </div>
-                    </div>
-                </div>
+        {/* Column 3: Last Updated (15% - reduced from 25%) */}
+        <div className="column col-last-updated">
+            <LastUpdated 
+                lastUpdatedDate={lastUpdatedDate}
+                bopSystemsData={bopSystemsData}
+                mudPumpLinersData={mudPumpLinersData}
+            />
+        </div>
+
+        {/* Column 4: Cargo (15% - new column) */}
+        <div className="column col-cargo">
+            <CargoView />
+        </div>
+    </div>
+</div>
 
                 {/* BOTTOM SECTION - Height determined by content */}
                 <div className="bottom-section">
