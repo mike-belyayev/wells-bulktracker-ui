@@ -12,6 +12,7 @@ import CargoView from '../components/Cargo/CargoView';
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
 // Import CasingProfile type from WellInformation
 import type { CasingProfile } from '../components/Dashboard/WellInformation';
+import wellApiService from '../services/wellApi';  // Fixed: changed 'servics' to 'services'
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
@@ -20,47 +21,11 @@ const EquipmentPage = () => {
     const userRig = user?.homeLocation || 'NSC';
 
     const [loading, setLoading] = useState(false);
-    const [vessels, setVessels] = useState<SupplyVessel[]>([
-        {
-            id: '1',
-            vessel: 'Supply Boat 1',
-            location: 'Dock A',
-            crewChange: 'Scheduled',
-            fuelOil: 150,
-            potWater: 200,
-            drlWater: 100,
-            barite: 50,
-            baseOil: 75,
-            cementG: 30
-        },
-        {
-            id: '2',
-            vessel: 'Supply Boat 2',
-            location: 'Dock B',
-            crewChange: 'Completed',
-            fuelOil: 180,
-            potWater: 220,
-            drlWater: 120,
-            barite: 60,
-            baseOil: 85,
-            cementG: 35
-        },
-        {
-            id: '3',
-            vessel: 'Supply Boat 3',
-            location: 'Offshore',
-            crewChange: 'Pending',
-            fuelOil: 120,
-            potWater: 180,
-            drlWater: 90,
-            barite: 40,
-            baseOil: 65,
-            cementG: 25
-        }
-    ]);
+    const [currentWellId, setCurrentWellId] = useState<string | null>(null);
+    const [vessels, setVessels] = useState<SupplyVessel[]>([]);
     
     // Fix: Use undefined instead of null with proper typing
-    const [wellData] = useState<{
+    const [wellData, setWellData] = useState<{
         wellName?: string;
         waterDepth?: number;
         airGap?: number;
@@ -99,34 +64,71 @@ const EquipmentPage = () => {
         severity: 'success'
     });
 
-    // API calls would go here
-    const fetchDashboardData = async () => {
-        setLoading(true);
+    // Destructure the APIs from the service
+    const { wellApi, supplyVesselApi } = wellApiService;
+
+    // Load well data from API
+    const loadWellData = async (wellId: string) => {
         try {
-            // Fetch well data
-            // const wellResponse = await fetch(API_ENDPOINTS.WELL_INFO);
-            // setWellData(wellResponse.data);
+            setLoading(true);
+            const well = await wellApi.getWell(wellId);
+            setCurrentWellId(well._id);
             
-            // Fetch fluid data
-            // const fluidResponse = await fetch(API_ENDPOINTS.FLUID_DATA);
-            // setFluidData(fluidResponse.data);
+            // Set well data for WellInformation component
+            setWellData({
+                wellName: well.wellName,
+                waterDepth: well.waterDepth ? Number(well.waterDepth) : undefined,
+                airGap: well.airGap ? Number(well.airGap) : undefined,
+                casingProfiles: well.casingProfile
+            });
             
-            // Fetch supply vessels
-            // const vesselsResponse = await fetch(API_ENDPOINTS.SUPPLY_VESSELS);
-            // setVessels(vesselsResponse.data);
+            // Transform supply vessels from API format to UI format
+            if (well.supplyVessels && Array.isArray(well.supplyVessels)) {
+                const formattedVessels = well.supplyVessels.map((vessel: any, index: number) => ({
+                    id: vessel._id || index.toString(),
+                    vessel: vessel.vesselName || '',
+                    location: vessel.location || '',
+                    crewChange: vessel.crewChange || '',
+                    fuelOil: Number(vessel.fuelOil) || 0,
+                    potWater: Number(vessel.potWater) || 0,
+                    drlWater: Number(vessel.drlWater) || 0,
+                    barite: Number(vessel.barite) || 0,
+                    baseOil: Number(vessel.baseOil) || 0,
+                    cementG: Number(vessel.cementG) || 0,
+                    ...vessel.additionalFields // Include any dynamic fields
+                }));
+                setVessels(formattedVessels);
+            }
             
-            console.log('Dashboard data fetched');
+            console.log('Well data loaded:', well.wellName);
         } catch (err) {
-            console.error('Failed to fetch dashboard data:', err);
-            showSnackbar('Failed to load dashboard data', 'error');
+            console.error('Failed to load well data:', err);
+            showSnackbar('Failed to load well data', 'error');
         } finally {
             setLoading(false);
         }
     };
 
+    // Get well ID based on user's rig and selected well
     useEffect(() => {
-        fetchDashboardData();
-    }, []);
+        const fetchWellId = async () => {
+            try {
+                const wells = await wellApi.getWellsByOwner(userRig);
+                if (wells && wells.length > 0) {
+                    // Load the first well or get from URL params
+                    loadWellData(wells[0]._id);
+                } else {
+                    console.log('No wells found for owner:', userRig);
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('Failed to fetch wells:', err);
+                setLoading(false);
+            }
+        };
+        
+        fetchWellId();
+    }, [userRig]);
 
     const showSnackbar = (message: string, severity: 'success' | 'error') => {
         setSnackbar({ open: true, message, severity });
@@ -137,24 +139,100 @@ const EquipmentPage = () => {
     };
 
     const handleRefresh = () => {
-        fetchDashboardData();
-        showSnackbar('Dashboard refreshed', 'success');
+        if (currentWellId) {
+            loadWellData(currentWellId);
+            showSnackbar('Dashboard refreshed', 'success');
+        }
     };
 
-    // Supply Vessel CRUD operations
-    const handleVesselsChange = (newVessels: SupplyVessel[]) => {
+    // Supply Vessel CRUD operations with API
+    const handleVesselsChange = async (newVessels: SupplyVessel[]) => {
+        // Detect if this is an add operation (new vessel with no API ID)
+        const isAddOperation = newVessels.length > vessels.length;
+        const isDeleteOperation = newVessels.length < vessels.length;
+        
+        if (isAddOperation && currentWellId) {
+            // New vessel added
+            const newVessel = newVessels.find(v => !vessels.some(old => old.id === v.id));
+            if (newVessel) {
+                try {
+                    const apiVessel = {
+                        vesselName: newVessel.vessel,
+                        location: newVessel.location,
+                        crewChange: newVessel.crewChange,
+                        fuelOil: newVessel.fuelOil.toString(),
+                        potWater: newVessel.potWater.toString(),
+                        drlWater: newVessel.drlWater.toString(),
+                        barite: newVessel.barite.toString(),
+                        baseOil: newVessel.baseOil.toString(),
+                        cementG: newVessel.cementG.toString()
+                    };
+                    await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
+                    showSnackbar('Vessel added successfully', 'success');
+                    // Refresh to get the updated data with real IDs
+                    await loadWellData(currentWellId);
+                } catch (err) {
+                    console.error('Failed to add vessel:', err);
+                    showSnackbar('Failed to add vessel', 'error');
+                    return;
+                }
+            }
+        } else if (isDeleteOperation && currentWellId) {
+            // Vessel deleted
+            const deletedVessel = vessels.find(v => !newVessels.some(old => old.id === v.id));
+            if (deletedVessel) {
+                try {
+                    const index = vessels.findIndex(v => v.id === deletedVessel.id);
+                    await supplyVesselApi.deleteSupplyVessel(currentWellId, index);
+                    showSnackbar('Vessel deleted successfully', 'success');
+                } catch (err) {
+                    console.error('Failed to delete vessel:', err);
+                    showSnackbar('Failed to delete vessel', 'error');
+                    return;
+                }
+            }
+        }
+        
         setVessels(newVessels);
-        // Here you would also save to API
     };
 
     const handleSaveVessel = async (vessel: SupplyVessel) => {
-        console.log('Saving vessel:', vessel);
-        // await fetch(API_ENDPOINTS.SUPPLY_VESSEL, { method: 'PUT', body: JSON.stringify(vessel) });
+        if (!currentWellId) return;
+        
+        try {
+            const index = vessels.findIndex(v => v.id === vessel.id);
+            const apiVessel = {
+                vesselName: vessel.vessel,
+                location: vessel.location,
+                crewChange: vessel.crewChange,
+                fuelOil: vessel.fuelOil.toString(),
+                potWater: vessel.potWater.toString(),
+                drlWater: vessel.drlWater.toString(),
+                barite: vessel.barite.toString(),
+                baseOil: vessel.baseOil.toString(),
+                cementG: vessel.cementG.toString()
+            };
+            await supplyVesselApi.updateSupplyVessel(currentWellId, index, apiVessel);
+            showSnackbar('Vessel saved successfully', 'success');
+        } catch (err) {
+            console.error('Failed to save vessel:', err);
+            showSnackbar('Failed to save vessel', 'error');
+            throw err;
+        }
     };
 
     const handleDeleteVessel = async (id: string) => {
-        console.log('Deleting vessel:', id);
-        // await fetch(`${API_ENDPOINTS.SUPPLY_VESSEL}/${id}`, { method: 'DELETE' });
+        if (!currentWellId) return;
+        
+        try {
+            const index = vessels.findIndex(v => v.id === id);
+            await supplyVesselApi.deleteSupplyVessel(currentWellId, index);
+            showSnackbar('Vessel deleted successfully', 'success');
+        } catch (err) {
+            console.error('Failed to delete vessel:', err);
+            showSnackbar('Failed to delete vessel', 'error');
+            throw err;
+        }
     };
 
     if (loading && !vessels.length) {
@@ -216,38 +294,39 @@ const EquipmentPage = () => {
             {/* Main Content - Dynamic layout */}
             <div className="main-content">
                 {/* TOP SECTION - Takes remaining space */}
-<div className="top-section">
-    <div className="four-column-layout">
-        {/* Column 1: Well Information (15%) */}
-        <div className="column col-well">
-            <WellInformation wellData={wellData} />
-        </div>
+                <div className="top-section">
+                    <div className="four-column-layout">
+                        {/* Column 1: Well Information */}
+                        <div className="column col-well">
+                            <WellInformation wellData={wellData} />
+                        </div>
 
-        {/* Column 2: Mud Pit Data (55% - increased from 50% to 55%) */}
-        <div className="column col-mud">
-            <MudPitFluidData fluidData={fluidData} />
-        </div>
+                        {/* Column 2: Mud Pit Data */}
+                        <div className="column col-mud">
+                            <MudPitFluidData fluidData={fluidData} />
+                        </div>
 
-        {/* Column 3: Last Updated (15% - reduced from 25%) */}
-        <div className="column col-last-updated">
-            <LastUpdated 
-                lastUpdatedDate={lastUpdatedDate}
-                bopSystemsData={bopSystemsData}
-                mudPumpLinersData={mudPumpLinersData}
-            />
-        </div>
+                        {/* Column 3: Last Updated */}
+                        <div className="column col-last-updated">
+                            <LastUpdated 
+                                lastUpdatedDate={lastUpdatedDate}
+                                bopSystemsData={bopSystemsData}
+                                mudPumpLinersData={mudPumpLinersData}
+                            />
+                        </div>
 
-        {/* Column 4: Cargo (15% - new column) */}
-        <div className="column col-cargo">
-            <CargoView />
-        </div>
-    </div>
-</div>
+                        {/* Column 4: Cargo */}
+                        <div className="column col-cargo">
+                            <CargoView />
+                        </div>
+                    </div>
+                </div>
 
-                {/* BOTTOM SECTION - Height determined by content */}
+                {/* BOTTOM SECTION - Supply Vessels */}
                 <div className="bottom-section">
                     <SupplyVesselsTable 
                         vessels={vessels}
+                        wellId={currentWellId || undefined}
                         onVesselsChange={handleVesselsChange}
                         onSave={handleSaveVessel}
                         onDelete={handleDeleteVessel}

@@ -1,19 +1,22 @@
 /* src/components/SupplyVessels/SupplyVesselsTable.css */
 
 .vessels-panel {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: visible;
-    width: 100%;
+    overflow: hidden;
+    background-color: white !important;
+    border-radius: 4px;
 }
 
 .vessels-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 12px 16px;
     background-color: #f5f5f5;
     flex-shrink: 0;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .vessels-title {
@@ -22,94 +25,167 @@
     color: #333;
 }
 
+.header-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.add-column-btn {
+    text-transform: none !important;
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+    border-color: #4caf50 !important;
+    color: #4caf50 !important;
+}
+
+.add-column-btn:hover {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+}
+
 .add-vessel-btn {
-    background-color: #4caf50 !important;
+    background-color: #2196f3 !important;
     color: white !important;
     text-transform: none !important;
-    font-size: 0.75rem !important;
-    padding: 4px 10px !important;
-    min-height: 28px !important;
+    font-size: 0.7rem !important;
+    padding: 4px 12px !important;
 }
 
 .add-vessel-btn:hover {
-    background-color: #45a049 !important;
+    background-color: #1976d2 !important;
 }
 
 .vessels-table-container {
+    flex: 1;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
 }
 
 .vessels-table {
-    min-width: 1100px;
-    width: 100%;
+    min-width: 1000px;
 }
 
 .table-header-cell {
     font-weight: 700 !important;
     background-color: #e8e8e8 !important;
-    font-size: 0.75rem !important;
-    padding: 6px 4px !important;
+    font-size: 0.7rem !important;
+    padding: 10px 8px !important;
     white-space: nowrap;
-    line-height: 1.2 !important;
-    text-align: center !important;
+    border-bottom: 2px solid #d0d0d0 !important;
 }
 
-.table-header-cell:first-child {
-    padding-left: 8px !important;
-    text-align: left !important;
+.dynamic-header {
+    cursor: context-menu;
+    background-color: #e0e0e0 !important;
 }
 
-.table-header-cell:nth-child(2) {
-    text-align: left !important;
-}
-
-.table-header-cell:nth-child(3) {
-    text-align: left !important;
+.dynamic-header:hover {
+    background-color: #d4d4d4 !important;
 }
 
 .unit-text {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: normal;
-    color: #555;
+    color: #666;
     margin-left: 4px;
 }
 
 .table-body-cell {
-    font-size: 0.75rem !important;
-    padding: 4px 4px !important;
+    font-size: 0.7rem !important;
+    padding: 8px 6px !important;
+    border-bottom: 1px solid #f0f0f0 !important;
 }
 
-.table-body-cell:first-child {
-    padding-left: 8px !important;
+.empty-cell {
+    color: #999 !important;
+    font-style: italic !important;
+    background-color: #fafafa !important;
+}
+
+.empty-table-cell {
+    padding: 40px !important;
+    color: #999 !important;
+    font-style: italic !important;
 }
 
 .actions-header {
     text-align: center;
-    min-width: 70px;
+    min-width: 80px;
 }
 
-.vessels-table .MuiTableCell-root {
-    border-bottom: 1px solid #e0e0e0;
-}
-
+/* Edit mode text fields */
 .vessels-table .MuiTextField-root {
     margin: 0;
 }
 
 .vessels-table .MuiInputBase-root {
-    font-size: 0.75rem !important;
+    font-size: 0.7rem !important;
 }
 
 .vessels-table .MuiOutlinedInput-input {
-    padding: 4px 6px !important;
+    padding: 6px 8px !important;
 }
 
+/* Action buttons */
 .vessels-table .MuiIconButton-root {
-    padding: 2px;
-    margin: 0 2px;
+    padding: 4px;
 }
 
-.vessels-table .MuiIconButton-sizeSmall {
-    padding: 2px;
+/* Scrollbar styling */
+.vessels-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.vessels-table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.vessels-table-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.vessels-table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .vessels-header {
+        padding: 8px 12px;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+    
+    .header-buttons {
+        justify-content: center;
+    }
+    
+    .table-header-cell {
+        font-size: 0.65rem !important;
+        padding: 6px 4px !important;
+    }
+    
+    .table-body-cell {
+        font-size: 0.65rem !important;
+        padding: 6px 4px !important;
+    }
+}
+
+/* Dialog styles */
+.MuiDialog-paper {
+    border-radius: 8px !important;
+}
+
+.MuiDialogTitle-root {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.MuiDialogActions-root {
+    padding: 12px 16px;
+    border-top: 1px solid #e0e0e0;
 }
