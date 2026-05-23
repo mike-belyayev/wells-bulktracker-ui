@@ -61,6 +61,30 @@ export const API_ENDPOINTS = {
   SITE_ACTIVE_WELL: (siteName: string) => `${API_BASE_URL}/api/sites/${siteName}/active-well`,
   SITE_NEXT_WELL: (siteName: string) => `${API_BASE_URL}/api/sites/${siteName}/next-well`,
   SITE_WITH_WELLS: (siteName: string) => `${API_BASE_URL}/api/sites/${siteName}/with-wells`,
+
+  // ===== SUPPLY VESSEL ENDPOINTS =====
+  WELL_SUPPLY_VESSELS: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/supply-vessels`,
+  WELL_SUPPLY_VESSEL_BY_INDEX: (wellId: string, vesselIndex: number) => 
+    `${API_BASE_URL}/api/wells/${wellId}/supply-vessels/${vesselIndex}`,
+  
+  // ===== CARGO VESSEL ENDPOINTS =====
+  WELL_CARGO_VESSELS: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/cargo-vessels`,
+  WELL_CARGO_VESSEL_BY_INDEX: (wellId: string, vesselIndex: number) => 
+    `${API_BASE_URL}/api/wells/${wellId}/cargo-vessels/${vesselIndex}`,
+  
+  // ===== MUD PIT ENDPOINTS =====
+  WELL_MUD_PITS: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/mud-pits`,
+  WELL_MUD_PIT_BY_INDEX: (wellId: string, pitIndex: number) => 
+    `${API_BASE_URL}/api/wells/${wellId}/mud-pits/${pitIndex}`,
+  
+  // ===== BOP SYSTEMS ENDPOINTS =====
+  WELL_BOP_SYSTEMS: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/bop-systems`,
+  
+  // ===== MUD PUMP LINERS ENDPOINTS =====
+  WELL_MUD_PUMP_LINERS: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/mud-pump-liners`,
+  
+  // ===== CASING PROFILE ENDPOINTS =====
+  WELL_CASING_PROFILE: (wellId: string) => `${API_BASE_URL}/api/wells/${wellId}/casing-profile`,
 };
 
 export default API_BASE_URL;
