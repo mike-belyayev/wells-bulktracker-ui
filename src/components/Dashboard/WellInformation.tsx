@@ -4,11 +4,9 @@ import './WellInformation.css';
 
 export interface WellInformationProps {
     wellData?: any;
-    _onUpdate?: (data: any) => void;  // Prefix with _
-    _readOnly?: boolean;  // Prefix with _
 }
 
-const WellInformation = ({ wellData, _onUpdate, _readOnly }: WellInformationProps) => {
+const WellInformation = ({ wellData }: WellInformationProps) => {
     return (
         <Paper className="info-panel" elevation={3}>
             <div className="panel-header">

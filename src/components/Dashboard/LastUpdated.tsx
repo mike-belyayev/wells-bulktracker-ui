@@ -6,7 +6,6 @@ export interface LastUpdatedProps {
     lastUpdatedDate?: string;
     bopSystemsData?: BopSystem[];
     mudPumpLinersData?: MudPumpLiner[];
-    onUpdate?: (data: any) => void;
 }
 
 export interface BopSystem {

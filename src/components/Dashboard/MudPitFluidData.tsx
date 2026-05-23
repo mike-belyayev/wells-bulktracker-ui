@@ -4,11 +4,9 @@ import './MudPitFluidData.css';
 
 export interface MudPitFluidDataProps {
     fluidData?: any;
-    _onUpdate?: (data: any) => void;  // Prefix with _
-    _readOnly?: boolean;  // Prefix with _
 }
 
-const MudPitFluidData = ({ fluidData, _onUpdate, _readOnly }: MudPitFluidDataProps) => {
+const MudPitFluidData = ({ fluidData }: MudPitFluidDataProps) => {
     return (
         <Paper className="info-panel" elevation={3}>
             <div className="panel-header">
