@@ -200,3 +200,18 @@
         font-size: 0.7rem !important;
     }
 }
+
+/* src/components/Dashboard/MudPitFluidData.css - Add at the end */
+
+/* Add to existing MudPitFluidData.css */
+.fluid-panel {
+    overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.fluid-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100% - 40px) !important;
+}

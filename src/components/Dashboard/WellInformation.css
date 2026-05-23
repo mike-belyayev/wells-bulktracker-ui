@@ -176,3 +176,18 @@
         font-size: 0.45rem !important;
     }
 }
+
+/* src/components/Dashboard/WellInformation.css - Add at the end */
+
+/* Add to existing WellInformation.css */
+.info-panel {
+    overflow: hidden !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.panel-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100% - 40px) !important;
+}

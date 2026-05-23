@@ -10,7 +10,7 @@
     font-family: Arial, sans-serif;
 }
 
-/* Header Styles */
+/* Header Styles - FIXED at top - Dark background */
 .equipment-header {
     background-color: #121212 !important;
     color: white;
@@ -107,62 +107,71 @@
     background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-/* Main Content - No vertical scroll */
+/* Main Content - Dynamic vertical split */
 .main-content {
     display: flex;
     flex-direction: column;
     flex: 1;
-    overflow: visible;
+    overflow: hidden;
     padding: 12px 16px;
     gap: 12px;
     min-height: 0;
 }
 
-/* TOP SECTION - No scroll */
+/* TOP SECTION - Takes all remaining space */
 .top-section {
     flex: 1 1 auto;
-    overflow: visible;
-    min-height: auto;
+    overflow: hidden;
+    min-height: 0;
 }
 
-/* BOTTOM SECTION */
+/* BOTTOM SECTION - Height determined by content */
 .bottom-section {
     flex: 0 0 auto;
     overflow: visible;
 }
 
-/* Four Column Layout */
+/* Four Column Layout - Using flex-grow (NO PERCENTAGES) */
 .four-column-layout {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     height: 100%;
     width: 100%;
     min-width: 0;
 }
 
-/* Column widths */
+/* Column widths using flex-grow - This sums to 10.5 total */
 .col-well {
-    flex: 0 0 18%;
+    flex: 2;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .col-mud {
-    flex: 0 0 54%;
+    flex: 5;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .col-last-updated {
-    flex: 0 0 16%;
+    flex: 2;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
 }
 
 .col-cargo {
-    flex: 0 0 12%;
+    flex: 1.5;
     min-width: 0;
-    overflow: visible;
+    overflow: hidden;
+}
+
+/* Ensure all content respects column boundaries */
+.col-well > *, 
+.col-mud > *, 
+.col-last-updated > *, 
+.col-cargo > * {
+    height: 100%;
+    width: 100%;
 }
 
 /* Vessels table container */
@@ -184,16 +193,24 @@
     color: #666;
 }
 
-/* Responsive */
+/* Responsive breakpoints */
 @media (max-width: 1600px) {
     .four-column-layout {
-        gap: 8px;
+        gap: 10px;
+    }
+    
+    .col-cargo {
+        flex: 1.8;
     }
 }
 
 @media (max-width: 1400px) {
     .four-column-layout {
-        gap: 6px;
+        gap: 8px;
+    }
+    
+    .col-cargo {
+        flex: 2;
     }
 }
 
@@ -206,6 +223,10 @@
     .col-well, .col-mud, .col-last-updated, .col-cargo {
         flex: auto;
         min-width: 280px;
+    }
+    
+    .top-section {
+        overflow-y: auto;
     }
 }
 
@@ -220,6 +241,7 @@
     }
 }
 
+/* Print styles */
 @media print {
     .equipment-header {
         display: none;
