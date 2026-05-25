@@ -7,7 +7,6 @@ import {
     Menu, MenuItem, Typography
 } from '@mui/material';
 import { Delete, Add, Edit, Save, Cancel, ViewColumn } from '@mui/icons-material';
-import CargoView from '../Cargo/CargoView';
 import './SupplyVesselsTable.css';
 
 export interface SupplyVessel {
@@ -22,6 +21,18 @@ export interface SupplyVessel {
     baseOil: number;
     cementG: number;
     [key: string]: any;
+}
+
+export interface CargoItem {
+    id: string;
+    name: string;
+}
+
+export interface CargoVessel {
+    id: string;
+    name: string;
+    arrivalDate: string;
+    containers: CargoItem[];
 }
 
 export interface SupplyVesselsTableProps {
@@ -55,6 +66,39 @@ const SupplyVesselsTable = ({
     const [newColumnUnit, setNewColumnUnit] = useState('');
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
+    
+    // Cargo vessel states
+    const [cargoDialogOpen, setCargoDialogOpen] = useState(false);
+    const [newCargoName, setNewCargoName] = useState('');
+    const [newCargoDate, setNewCargoDate] = useState(new Date().toISOString().split('T')[0]);
+    const [cargoVessels, setCargoVessels] = useState<CargoVessel[]>([
+        {
+            id: '1',
+            name: 'VOYAGER',
+            arrivalDate: '2025-01-20',
+            containers: [
+                { id: 'c1', name: 'Pipe' },
+                { id: 'c2', name: 'Casing' }
+            ]
+        },
+        {
+            id: '2',
+            name: 'PACIFIC',
+            arrivalDate: '2025-01-20',
+            containers: [
+                { id: 'c3', name: 'Barite' },
+                { id: 'c4', name: 'Bentonite' }
+            ]
+        },
+        {
+            id: '3',
+            name: 'ATLANTIC',
+            arrivalDate: '2025-01-22',
+            containers: [
+                { id: 'c6', name: 'Fuel Oil' }
+            ]
+        }
+    ]);
 
     useEffect(() => {
         const allKeys = new Set<string>();
@@ -83,6 +127,65 @@ const SupplyVesselsTable = ({
         return '';
     };
 
+    // Cargo vessel functions
+    const handleAddCargoVessel = () => {
+        if (newCargoName.trim()) {
+            const newVessel: CargoVessel = {
+                id: Date.now().toString(),
+                name: newCargoName.toUpperCase(),
+                arrivalDate: newCargoDate,
+                containers: []
+            };
+            setCargoVessels([...cargoVessels, newVessel]);
+            setCargoDialogOpen(false);
+            setNewCargoName('');
+            setNewCargoDate(new Date().toISOString().split('T')[0]);
+        }
+    };
+
+    const addCargoContainer = (vesselId: string) => {
+        const newContainer: CargoItem = {
+            id: Date.now().toString(),
+            name: 'Cargo'
+        };
+        setCargoVessels(cargoVessels.map(vessel => 
+            vessel.id === vesselId 
+                ? { ...vessel, containers: [...vessel.containers, newContainer] }
+                : vessel
+        ));
+    };
+
+    const removeCargoContainer = (vesselId: string, containerId: string) => {
+        setCargoVessels(cargoVessels.map(vessel =>
+            vessel.id === vesselId
+                ? { ...vessel, containers: vessel.containers.filter(c => c.id !== containerId) }
+                : vessel
+        ));
+    };
+
+    const updateCargoContainerName = (vesselId: string, containerId: string, name: string) => {
+        setCargoVessels(cargoVessels.map(vessel =>
+            vessel.id === vesselId
+                ? {
+                    ...vessel,
+                    containers: vessel.containers.map(c =>
+                        c.id === containerId ? { ...c, name } : c
+                    )
+                  }
+                : vessel
+        ));
+    };
+
+    const removeCargoVessel = (vesselId: string) => {
+        if (window.confirm('Are you sure you want to delete this cargo vessel?')) {
+            setCargoVessels(cargoVessels.filter(v => v.id !== vesselId));
+        }
+    };
+
+    const handleAddColumnClick = () => {
+        setColumnDialogOpen(true);
+    };
+
     const handleAddColumn = () => {
         if (newColumnName.trim()) {
             const newKey = newColumnName.toLowerCase().replace(/\s+/g, '_');
@@ -105,7 +208,7 @@ const SupplyVesselsTable = ({
         }
     };
 
-    const handleAddVessel = () => {
+    const handleAddSupplyVessel = () => {
         const newVessel: SupplyVessel = {
             id: Date.now().toString(),
             vessel: 'New Vessel',
@@ -128,8 +231,8 @@ const SupplyVesselsTable = ({
         setEditData(newVessel);
     };
 
-    const handleDeleteVessel = async (id: string) => {
-        if (window.confirm('Are you sure you want to delete this vessel?')) {
+    const handleDeleteSupplyVessel = async (id: string) => {
+        if (window.confirm('Are you sure you want to delete this supply vessel?')) {
             if (wellId && onDelete) {
                 await onDelete(id);
             }
@@ -210,40 +313,106 @@ const SupplyVesselsTable = ({
         }
     };
 
+    // Group cargo vessels by arrival date
+    const groupedCargoVessels = cargoVessels.reduce((groups, vessel) => {
+        const date = vessel.arrivalDate;
+        if (!groups[date]) {
+            groups[date] = [];
+        }
+        groups[date].push(vessel);
+        return groups;
+    }, {} as Record<string, CargoVessel[]>);
+
+    const sortedCargoDates = Object.keys(groupedCargoVessels).sort();
+
     return (
         <Paper className="vessels-panel" elevation={3}>
             <div className="vessels-header">
-                <div className="header-left-section">
+                <div className="header-title-section">
                     <Typography variant="h6" className="vessels-title">
-                        SUPPLY VESSELS
+                        SUPPLY<br />VESSELS
                     </Typography>
-                    <div className="integrated-cargo">
-                        <CargoView />
+                </div>
+                
+                {/* Cargo Vessels Header Bar - Horizontal scroll */}
+                <div className="cargo-header-bar">
+                    <div className="cargo-scroll-container">
+                        {sortedCargoDates.map(date => (
+                            <div key={date} className="cargo-date-group-header">
+                                <div className="cargo-date-tag-header">
+                                    <span className="cargo-date-text-header">{date}</span>
+                                </div>
+                                <div className="cargo-vessels-row">
+                                    {groupedCargoVessels[date].map(boat => (
+                                        <div key={boat.id} className="cargo-vessel-header">
+                                                                                        <div className="cargo-containers-row">
+                                                {boat.containers.map(container => (
+                                                    <div key={container.id} className="cargo-container-chip-header">
+                                                        <input
+                                                            type="text"
+                                                            value={container.name}
+                                                            onChange={(e) => updateCargoContainerName(boat.id, container.id, e.target.value)}
+                                                            className="cargo-container-input-header"
+                                                            placeholder="Cargo"
+                                                        />
+                                                        <MuiIconButton
+                                                            size="small"
+                                                            onClick={() => removeCargoContainer(boat.id, container.id)}
+                                                            className="cargo-container-delete"
+                                                        >
+                                                            <Delete fontSize="small" />
+                                                        </MuiIconButton>
+                                                    </div>
+                                                ))}
+                                                <MuiIconButton
+                                                    size="small"
+                                                    onClick={() => addCargoContainer(boat.id)}
+                                                    className="add-cargo-container-header"
+                                                >
+                                                    <Add fontSize="small" />
+                                                </MuiIconButton>
+                                            </div>
+                                            <div className="cargo-vessel-name">
+                                                <span>{boat.name}</span>
+                                                <MuiIconButton
+                                                    size="small"
+                                                    onClick={() => removeCargoVessel(boat.id)}
+                                                    className="cargo-vessel-delete"
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </MuiIconButton>
+                                            </div>
+
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
-                <div className="header-buttons">
-                    {!readOnly && (
-                        <>
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<ViewColumn />}
-                                onClick={() => setColumnDialogOpen(true)}
-                                className="add-column-btn"
-                                title="Add column"
-                            />
-                            <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<Add />}
-                                onClick={handleAddVessel}
-                                className="add-vessel-btn"
-                                title="Add vessel"
-                            />
-                        </>
-                    )}
+                
+                <div className="header-actions-section-vertical">
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Add />}
+                        onClick={handleAddSupplyVessel}
+                        className="action-btn supply-action"
+                    >
+                        SUPPLY
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<Add />}
+                        onClick={() => setCargoDialogOpen(true)}
+                        className="action-btn cargo-action"
+                    >
+                        CARGO
+                    </Button>
                 </div>
             </div>
+            
             <Divider />
             <TableContainer className="vessels-table-container">
                 <Table stickyHeader size="small" className="vessels-table">
@@ -285,7 +454,20 @@ const SupplyVesselsTable = ({
                                 </TableCell>
                             ))}
                             {!readOnly && (
-                                <TableCell className="table-header-cell actions-header">ACTIONS</TableCell>
+                                <TableCell className="table-header-cell actions-header">
+                                    <div className="actions-header-content">
+                                        <span>ACTIONS</span>
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={handleAddColumnClick}
+                                            className="add-column-icon-btn"
+                                            title="Add column"
+                                        >
+                                            +
+                                        </Button>
+                                    </div>
+                                </TableCell>
                             )}
                         </TableRow>
                     </TableHead>
@@ -439,7 +621,7 @@ const SupplyVesselsTable = ({
                                                 <MuiIconButton size="small" onClick={() => handleStartEdit(vessel)} color="primary">
                                                     <Edit fontSize="small" />
                                                 </MuiIconButton>
-                                                <MuiIconButton size="small" onClick={() => handleDeleteVessel(vessel.id)} color="error">
+                                                <MuiIconButton size="small" onClick={() => handleDeleteSupplyVessel(vessel.id)} color="error">
                                                     <Delete fontSize="small" />
                                                 </MuiIconButton>
                                             </TableCell>
@@ -451,7 +633,7 @@ const SupplyVesselsTable = ({
                         {vessels.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={10 + dynamicColumns.length + (readOnly ? 0 : 1)} align="center" className="empty-table-cell">
-                                    No supply vessels found. Click "Add Vessel" to create one.
+                                    No supply vessels found. Click "SUPPLY" to create one.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -459,6 +641,7 @@ const SupplyVesselsTable = ({
                 </Table>
             </TableContainer>
 
+            {/* Add Column Dialog */}
             <Dialog open={columnDialogOpen} onClose={() => setColumnDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Add Dynamic Column</DialogTitle>
                 <DialogContent>
@@ -488,6 +671,40 @@ const SupplyVesselsTable = ({
                     <Button onClick={() => setColumnDialogOpen(false)}>Cancel</Button>
                     <Button onClick={handleAddColumn} variant="contained" color="primary">
                         Add Column
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Add Cargo Vessel Dialog */}
+            <Dialog open={cargoDialogOpen} onClose={() => setCargoDialogOpen(false)} maxWidth="sm" fullWidth>
+                <DialogTitle>Add New Cargo Vessel</DialogTitle>
+                <DialogContent>
+                    <MuiTextField
+                        autoFocus
+                        margin="dense"
+                        label="Vessel Name"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={newCargoName}
+                        onChange={(e) => setNewCargoName(e.target.value.toUpperCase())}
+                        placeholder="e.g., OCEAN VOYAGER"
+                    />
+                    <MuiTextField
+                        margin="dense"
+                        label="Arrival Date"
+                        type="date"
+                        fullWidth
+                        variant="outlined"
+                        value={newCargoDate}
+                        onChange={(e) => setNewCargoDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setCargoDialogOpen(false)}>Cancel</Button>
+                    <Button onClick={handleAddCargoVessel} variant="contained" color="primary">
+                        Add Vessel
                     </Button>
                 </DialogActions>
             </Dialog>

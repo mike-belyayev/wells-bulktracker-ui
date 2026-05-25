@@ -1,174 +1,165 @@
-/* src/components/Cargo/CargoView.css - Compact version for header */
+/* src/components/Cargo/CargoView.css */
 
-.integrated-cargo .cargo-bar {
-    background: transparent;
-    border: none;
-    overflow: hidden;
-    height: 100%;
+.cargo-container {
+    background: white;
+    border-top: 1px solid #e0e0e0;
 }
 
-.integrated-cargo .cargo-bar-header {
-    display: none; /* Hide header since it's integrated into parent */
-}
-
-.integrated-cargo .cargo-scroll-wrapper {
-    position: relative;
+.cargo-date-bar {
     display: flex;
-    align-items: center;
-    background: transparent;
-}
-
-.integrated-cargo .scroll-btn {
-    background: rgba(255,255,255,0.1) !important;
-    color: white !important;
-    width: 20px;
-    height: 20px;
-}
-
-.integrated-cargo .scroll-btn:hover {
-    background: rgba(255,255,255,0.2) !important;
-}
-
-.integrated-cargo .cargo-scroll-container {
-    display: flex;
-    gap: 12px;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 4px 24px;
     scroll-behavior: smooth;
 }
 
-.integrated-cargo .cargo-scroll-container::-webkit-scrollbar {
-    height: 3px;
+.cargo-date-bar::-webkit-scrollbar {
+    height: 4px;
 }
 
-.integrated-cargo .cargo-date-group {
+.cargo-date-bar::-webkit-scrollbar-track {
+    background: #e0e0e0;
+}
+
+.cargo-date-bar::-webkit-scrollbar-thumb {
+    background: #aaa;
+    border-radius: 2px;
+}
+
+.cargo-date-group {
     display: inline-flex;
     flex-direction: column;
-    gap: 2px;
     flex-shrink: 0;
+    background: #f8f9fa;
 }
 
-.integrated-cargo .cargo-date-tag {
+.cargo-date-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    padding: 1px 4px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 8px;
+    gap: 4px;
+    padding: 4px 12px;
+    background: #e0e0e0;
+    margin: 0;
+    border-radius: 0;
 }
 
-.integrated-cargo .cargo-date-icon {
-    font-size: 8px !important;
-    color: rgba(255,255,255,0.7);
+.cargo-date-icon {
+    font-size: 10px !important;
+    color: #555;
 }
 
-.integrated-cargo .cargo-date-text {
-    font-size: 0.45rem;
-    font-weight: 500;
-    color: rgba(255,255,255,0.8);
+.cargo-date-text {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: #333;
 }
 
-.integrated-cargo .cargo-boats-row {
+.cargo-boats-horizontal {
     display: flex;
     flex-direction: row;
-    gap: 6px;
+    gap: 8px;
+    padding: 8px;
 }
 
-.integrated-cargo .cargo-boat-card {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 3px;
-    min-width: 100px;
+/* Boat shape - with cut corners at bottom */
+.cargo-boat {
+    background: white;
+    border: 1px solid #d0d0d0;
+    min-width: 140px;
+    max-width: 160px;
+    clip-path: polygon(0% 0%, 100% 0%, 98% 100%, 2% 100%);
 }
 
-.integrated-cargo .cargo-boat-name {
+.boat-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 2px 4px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 2px 2px 0 0;
+    padding: 4px 8px;
+    background: #4a4a4a;
+    cursor: pointer;
 }
 
-.integrated-cargo .boat-name-text {
-    font-size: 0.45rem;
-    font-weight: 600;
+.boat-top:hover {
+    background: #5a5a5a;
+}
+
+.boat-name {
+    font-size: 0.6rem;
+    font-weight: 700;
     color: white;
     text-transform: uppercase;
 }
 
-.integrated-cargo .cargo-remove-boat {
-    padding: 1px !important;
-    color: rgba(255,255,255,0.5) !important;
+.boat-delete {
+    padding: 2px !important;
+    color: #aaa !important;
 }
 
-.integrated-cargo .cargo-remove-boat:hover {
+.boat-delete:hover {
     color: #ff9800 !important;
 }
 
-.integrated-cargo .cargo-containers-row {
+.boat-containers {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 2px;
-    padding: 2px;
+    gap: 4px;
+    padding: 6px;
+    background: #fafafa;
 }
 
-.integrated-cargo .cargo-container-chip {
+.cargo-chip {
     display: flex;
     align-items: center;
-    gap: 1px;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 6px;
-    padding: 1px 4px;
+    gap: 2px;
+    background: #f0f0f0;
+    border: 1px solid #d0d0d0;
+    padding: 2px 6px;
 }
 
-.integrated-cargo .cargo-container-input {
-    font-size: 0.4rem;
+.cargo-text {
+    font-size: 0.55rem;
     font-weight: 500;
-    color: white;
+    color: #333;
     background: transparent;
     border: none;
     outline: none;
-    width: 45px;
+    width: 70px;
     text-align: center;
 }
 
-.integrated-cargo .cargo-container-input::placeholder {
-    color: rgba(255,255,255,0.5);
+.cargo-text:focus {
+    background: white;
 }
 
-.integrated-cargo .cargo-container-input:focus {
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
+.chip-delete {
+    padding: 2px !important;
+    color: #bbb !important;
 }
 
-.integrated-cargo .cargo-remove-container {
-    padding: 1px !important;
-    color: rgba(255,255,255,0.4) !important;
-}
-
-.integrated-cargo .cargo-remove-container:hover {
+.chip-delete:hover {
     color: #f44336 !important;
 }
 
-.integrated-cargo .cargo-add-container {
-    padding: 1px !important;
+.add-cargo-chip {
+    padding: 2px !important;
     color: #4caf50 !important;
-    border: 1px dashed rgba(76,175,80,0.5) !important;
-    border-radius: 6px !important;
+    border: 1px dashed #4caf50 !important;
     background: transparent !important;
-    min-width: 20px;
 }
 
-.integrated-cargo .cargo-add-container:hover {
-    background: rgba(76, 175, 50, 0.2) !important;
+.add-cargo-chip:hover {
+    background: rgba(76, 175, 50, 0.1) !important;
 }
 
-/* Hide the standalone cargo bar styles when integrated */
-.cargo-bar:not(.integrated-cargo .cargo-bar) {
-    /* Standalone styles if needed elsewhere */
+.add-cargo-boat-btn {
+    margin: 8px !important;
+    text-transform: none !important;
+    font-size: 0.6rem !important;
+    background-color: #555 !important;
+    color: white !important;
+    border: none !important;
+}
+
+.add-cargo-boat-btn:hover {
+    background-color: #666 !important;
 }
