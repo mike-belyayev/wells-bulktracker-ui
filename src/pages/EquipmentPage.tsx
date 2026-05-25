@@ -7,12 +7,11 @@ import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Dashboard';
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
-import CargoView from '../components/Cargo/CargoView';
 // Import types from LastUpdated
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
 // Import CasingProfile type from WellInformation
 import type { CasingProfile } from '../components/Dashboard/WellInformation';
-import wellApiService from '../services/wellApi';  // Fixed: changed 'servics' to 'services'
+import wellApiService from '../services/wellApi';
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
@@ -24,7 +23,6 @@ const EquipmentPage = () => {
     const [currentWellId, setCurrentWellId] = useState<string | null>(null);
     const [vessels, setVessels] = useState<SupplyVessel[]>([]);
     
-    // Fix: Use undefined instead of null with proper typing
     const [wellData, setWellData] = useState<{
         wellName?: string;
         waterDepth?: number;
@@ -34,7 +32,6 @@ const EquipmentPage = () => {
     
     const [fluidData] = useState<any>(undefined);
     
-    // Last Updated data states
     const [lastUpdatedDate] = useState<string>('15-JAN-2025');
     const [bopSystemsData] = useState<BopSystem[]>([
         { id: '1', system: 'BOP Pressure Test', testDate: '10-JAN-2025', nextDate: '10-FEB-2025' },
@@ -64,17 +61,14 @@ const EquipmentPage = () => {
         severity: 'success'
     });
 
-    // Destructure the APIs from the service
     const { wellApi, supplyVesselApi } = wellApiService;
 
-    // Load well data from API
     const loadWellData = async (wellId: string) => {
         try {
             setLoading(true);
             const well = await wellApi.getWell(wellId);
             setCurrentWellId(well._id);
             
-            // Set well data for WellInformation component
             setWellData({
                 wellName: well.wellName,
                 waterDepth: well.waterDepth ? Number(well.waterDepth) : undefined,
@@ -82,7 +76,6 @@ const EquipmentPage = () => {
                 casingProfiles: well.casingProfile
             });
             
-            // Transform supply vessels from API format to UI format
             if (well.supplyVessels && Array.isArray(well.supplyVessels)) {
                 const formattedVessels = well.supplyVessels.map((vessel: any, index: number) => ({
                     id: vessel._id || index.toString(),
@@ -95,7 +88,7 @@ const EquipmentPage = () => {
                     barite: Number(vessel.barite) || 0,
                     baseOil: Number(vessel.baseOil) || 0,
                     cementG: Number(vessel.cementG) || 0,
-                    ...vessel.additionalFields // Include any dynamic fields
+                    ...vessel.additionalFields
                 }));
                 setVessels(formattedVessels);
             }
@@ -109,13 +102,11 @@ const EquipmentPage = () => {
         }
     };
 
-    // Get well ID based on user's rig and selected well
     useEffect(() => {
         const fetchWellId = async () => {
             try {
                 const wells = await wellApi.getWellsByOwner(userRig);
                 if (wells && wells.length > 0) {
-                    // Load the first well or get from URL params
                     loadWellData(wells[0]._id);
                 } else {
                     console.log('No wells found for owner:', userRig);
@@ -145,14 +136,11 @@ const EquipmentPage = () => {
         }
     };
 
-    // Supply Vessel CRUD operations with API
     const handleVesselsChange = async (newVessels: SupplyVessel[]) => {
-        // Detect if this is an add operation (new vessel with no API ID)
         const isAddOperation = newVessels.length > vessels.length;
         const isDeleteOperation = newVessels.length < vessels.length;
         
         if (isAddOperation && currentWellId) {
-            // New vessel added
             const newVessel = newVessels.find(v => !vessels.some(old => old.id === v.id));
             if (newVessel) {
                 try {
@@ -169,7 +157,6 @@ const EquipmentPage = () => {
                     };
                     await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
                     showSnackbar('Vessel added successfully', 'success');
-                    // Refresh to get the updated data with real IDs
                     await loadWellData(currentWellId);
                 } catch (err) {
                     console.error('Failed to add vessel:', err);
@@ -178,7 +165,6 @@ const EquipmentPage = () => {
                 }
             }
         } else if (isDeleteOperation && currentWellId) {
-            // Vessel deleted
             const deletedVessel = vessels.find(v => !newVessels.some(old => old.id === v.id));
             if (deletedVessel) {
                 try {
@@ -245,7 +231,6 @@ const EquipmentPage = () => {
 
     return (
         <div className="equipment-container">
-            {/* Header - Stays at top */}
             <AppBar position="static" className="equipment-header">
                 <Toolbar className="header-toolbar">
                     <Box className="header-left">
@@ -291,22 +276,16 @@ const EquipmentPage = () => {
                 </Toolbar>
             </AppBar>
 
-            {/* Main Content - Dynamic layout */}
             <div className="main-content">
-                {/* TOP SECTION - Takes remaining space */}
+                {/* TOP SECTION - 3 columns (removed cargo) */}
                 <div className="top-section">
-                    <div className="four-column-layout">
-                        {/* Column 1: Well Information */}
+                    <div className="three-column-layout">
                         <div className="column col-well">
                             <WellInformation wellData={wellData} />
                         </div>
-
-                        {/* Column 2: Mud Pit Data */}
                         <div className="column col-mud">
                             <MudPitFluidData fluidData={fluidData} />
                         </div>
-
-                        {/* Column 3: Last Updated */}
                         <div className="column col-last-updated">
                             <LastUpdated 
                                 lastUpdatedDate={lastUpdatedDate}
@@ -314,15 +293,10 @@ const EquipmentPage = () => {
                                 mudPumpLinersData={mudPumpLinersData}
                             />
                         </div>
-
-                        {/* Column 4: Cargo */}
-                        <div className="column col-cargo">
-                            <CargoView />
-                        </div>
                     </div>
                 </div>
 
-                {/* BOTTOM SECTION - Supply Vessels */}
+                {/* BOTTOM SECTION - Supply Vessels only (Cargo is integrated INSIDE SupplyVesselsTable header) */}
                 <div className="bottom-section">
                     <SupplyVesselsTable 
                         vessels={vessels}
@@ -335,7 +309,6 @@ const EquipmentPage = () => {
                 </div>
             </div>
 
-            {/* Snackbar for notifications */}
             <Snackbar
                 open={snackbar.open}
                 autoHideDuration={6000}

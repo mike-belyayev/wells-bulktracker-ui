@@ -131,8 +131,8 @@
     overflow: visible;
 }
 
-/* Four Column Layout - Using flex-grow (NO PERCENTAGES) */
-.four-column-layout {
+/* ==================== THREE COLUMN LAYOUT (for top section) ==================== */
+.three-column-layout {
     display: flex;
     gap: 12px;
     height: 100%;
@@ -140,7 +140,7 @@
     min-width: 0;
 }
 
-/* Column widths using flex-grow - This sums to 10.5 total */
+/* Column widths using flex-grow */
 .col-well {
     flex: 2;
     min-width: 0;
@@ -159,17 +159,10 @@
     overflow: hidden;
 }
 
-.col-cargo {
-    flex: 1.5;
-    min-width: 0;
-    overflow: hidden;
-}
-
 /* Ensure all content respects column boundaries */
 .col-well > *, 
 .col-mud > *, 
-.col-last-updated > *, 
-.col-cargo > * {
+.col-last-updated > * {
     height: 100%;
     width: 100%;
 }
@@ -193,34 +186,26 @@
     color: #666;
 }
 
-/* Responsive breakpoints */
+/* Responsive breakpoints for 3-column layout */
 @media (max-width: 1600px) {
-    .four-column-layout {
+    .three-column-layout {
         gap: 10px;
-    }
-    
-    .col-cargo {
-        flex: 1.8;
     }
 }
 
 @media (max-width: 1400px) {
-    .four-column-layout {
+    .three-column-layout {
         gap: 8px;
-    }
-    
-    .col-cargo {
-        flex: 2;
     }
 }
 
 @media (max-width: 1200px) {
-    .four-column-layout {
+    .three-column-layout {
         flex-wrap: wrap;
         gap: 12px;
     }
     
-    .col-well, .col-mud, .col-last-updated, .col-cargo {
+    .col-well, .col-mud, .col-last-updated {
         flex: auto;
         min-width: 280px;
     }
@@ -238,6 +223,10 @@
     
     .dev-credit {
         display: none;
+    }
+    
+    .three-column-layout {
+        gap: 8px;
     }
 }
 

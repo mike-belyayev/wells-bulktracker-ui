@@ -7,9 +7,9 @@ import {
     Menu, MenuItem, Typography
 } from '@mui/material';
 import { Delete, Add, Edit, Save, Cancel, ViewColumn } from '@mui/icons-material';
+import CargoView from '../Cargo/CargoView';
 import './SupplyVesselsTable.css';
 
-// Types
 export interface SupplyVessel {
     id: string;
     vessel: string;
@@ -21,7 +21,7 @@ export interface SupplyVessel {
     barite: number;
     baseOil: number;
     cementG: number;
-    [key: string]: any; // Allow dynamic fields
+    [key: string]: any;
 }
 
 export interface SupplyVesselsTableProps {
@@ -56,12 +56,10 @@ const SupplyVesselsTable = ({
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedColumn, setSelectedColumn] = useState<string | null>(null);
 
-    // Extract all unique dynamic column keys from all vessels
     useEffect(() => {
         const allKeys = new Set<string>();
         vessels.forEach(vessel => {
             Object.keys(vessel).forEach(key => {
-                // Skip static fields
                 if (!['id', 'vessel', 'location', 'crewChange', 'fuelOil', 'potWater', 
                        'drlWater', 'barite', 'baseOil', 'cementG'].includes(key)) {
                     allKeys.add(key);
@@ -95,7 +93,6 @@ const SupplyVesselsTable = ({
             };
             setDynamicColumns([...dynamicColumns, newColumn]);
             
-            // Add this column to all existing vessels with default empty value
             const updatedVessels = vessels.map(vessel => ({
                 ...vessel,
                 [newKey]: ''
@@ -122,7 +119,6 @@ const SupplyVesselsTable = ({
             cementG: 0
         };
         
-        // Add dynamic columns with empty values
         dynamicColumns.forEach(col => {
             newVessel[col.key] = '';
         });
@@ -203,7 +199,6 @@ const SupplyVesselsTable = ({
     const handleRemoveColumn = () => {
         if (selectedColumn) {
             if (window.confirm(`Are you sure you want to remove the column "${selectedColumn}"?`)) {
-                // Remove column from all vessels
                 const updatedVessels = vessels.map(vessel => {
                     const { [selectedColumn]: _, ...rest } = vessel;
                     return rest as SupplyVessel;
@@ -218,9 +213,14 @@ const SupplyVesselsTable = ({
     return (
         <Paper className="vessels-panel" elevation={3}>
             <div className="vessels-header">
-                <Typography variant="h6" className="vessels-title">
-                    Supply Vessels
-                </Typography>
+                <div className="header-left-section">
+                    <Typography variant="h6" className="vessels-title">
+                        SUPPLY VESSELS
+                    </Typography>
+                    <div className="integrated-cargo">
+                        <CargoView />
+                    </div>
+                </div>
                 <div className="header-buttons">
                     {!readOnly && (
                         <>
@@ -230,18 +230,16 @@ const SupplyVesselsTable = ({
                                 startIcon={<ViewColumn />}
                                 onClick={() => setColumnDialogOpen(true)}
                                 className="add-column-btn"
-                            >
-                                Add Column
-                            </Button>
+                                title="Add column"
+                            />
                             <Button
                                 variant="contained"
                                 size="small"
                                 startIcon={<Add />}
                                 onClick={handleAddVessel}
                                 className="add-vessel-btn"
-                            >
-                                Add Vessel
-                            </Button>
+                                title="Add vessel"
+                            />
                         </>
                     )}
                 </div>
@@ -272,7 +270,6 @@ const SupplyVesselsTable = ({
                             <TableCell className="table-header-cell" align="center">
                                 CEMENT G <span className="unit-text">(mt)</span>
                             </TableCell>
-                            {/* Dynamic Columns */}
                             {dynamicColumns.map(col => (
                                 <TableCell 
                                     key={col.key} 
@@ -296,7 +293,6 @@ const SupplyVesselsTable = ({
                         {vessels.map((vessel) => (
                             <TableRow key={vessel.id} hover>
                                 {editingId === vessel.id ? (
-                                    // Edit mode
                                     <>
                                         <TableCell>
                                             <TextField
@@ -407,7 +403,6 @@ const SupplyVesselsTable = ({
                                         </TableCell>
                                     </>
                                 ) : (
-                                    // View mode
                                     <>
                                         <TableCell className="table-body-cell">{vessel.vessel}</TableCell>
                                         <TableCell className="table-body-cell">{vessel.location || '—'}</TableCell>
@@ -464,7 +459,6 @@ const SupplyVesselsTable = ({
                 </Table>
             </TableContainer>
 
-            {/* Add Column Dialog */}
             <Dialog open={columnDialogOpen} onClose={() => setColumnDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Add Dynamic Column</DialogTitle>
                 <DialogContent>
@@ -498,7 +492,6 @@ const SupplyVesselsTable = ({
                 </DialogActions>
             </Dialog>
 
-            {/* Context Menu for removing columns */}
             <Menu
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}

@@ -13,46 +13,76 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
-    background-color: #f5f5f5;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
     flex-shrink: 0;
-    border-bottom: 1px solid #e0e0e0;
+    gap: 12px;
+    min-height: 48px;
+}
+
+.header-left-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
 }
 
 .vessels-title {
     font-weight: 600 !important;
-    font-size: 0.9rem !important;
-    color: #333;
+    font-size: 0.7rem !important;
+    color: white !important;
+    white-space: nowrap;
+}
+
+/* Integrated Cargo View - horizontal compact bar */
+.integrated-cargo {
+    flex: 1;
+    min-width: 0;
+    max-width: 65%;
 }
 
 .header-buttons {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .add-column-btn {
-    text-transform: none !important;
-    font-size: 0.7rem !important;
-    padding: 4px 8px !important;
-    border-color: #4caf50 !important;
-    color: #4caf50 !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    border-color: rgba(255,255,255,0.5) !important;
+    color: white !important;
 }
 
 .add-column-btn:hover {
-    background-color: rgba(76, 175, 80, 0.1) !important;
+    background-color: rgba(255,255,255,0.1) !important;
 }
 
 .add-vessel-btn {
-    background-color: #2196f3 !important;
+    min-width: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 0 !important;
+    background-color: #4caf50 !important;
     color: white !important;
-    text-transform: none !important;
-    font-size: 0.7rem !important;
-    padding: 4px 12px !important;
 }
 
 .add-vessel-btn:hover {
-    background-color: #1976d2 !important;
+    background-color: #45a049 !important;
+}
+
+.add-column-btn .MuiButton-startIcon,
+.add-vessel-btn .MuiButton-startIcon {
+    margin: 0 !important;
+}
+
+.add-column-btn span,
+.add-vessel-btn span {
+    display: none;
 }
 
 .vessels-table-container {
@@ -113,7 +143,6 @@
     min-width: 80px;
 }
 
-/* Edit mode text fields */
 .vessels-table .MuiTextField-root {
     margin: 0;
 }
@@ -126,12 +155,10 @@
     padding: 6px 8px !important;
 }
 
-/* Action buttons */
 .vessels-table .MuiIconButton-root {
     padding: 4px;
 }
 
-/* Scrollbar styling */
 .vessels-table-container::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -151,17 +178,19 @@
     background: #555;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .vessels-header {
-        padding: 8px 12px;
-        flex-direction: column;
-        gap: 8px;
-        align-items: stretch;
+        padding: 6px 8px;
+        flex-wrap: wrap;
     }
     
-    .header-buttons {
-        justify-content: center;
+    .header-left-section {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .integrated-cargo {
+        max-width: 100%;
     }
     
     .table-header-cell {
@@ -175,7 +204,6 @@
     }
 }
 
-/* Dialog styles */
 .MuiDialog-paper {
     border-radius: 8px !important;
 }
