@@ -1,10 +1,10 @@
 // src/components/Cargo/CargoView.tsx
 import { useState } from 'react';
 import { 
-    Typography, IconButton, Dialog, DialogTitle, DialogContent, 
-    DialogActions, TextField, Button, Box 
+    IconButton, Dialog, DialogTitle, DialogContent, 
+    DialogActions, TextField, Button
 } from '@mui/material';
-import { Add, Delete, CalendarToday, DeleteOutline, Edit } from '@mui/icons-material';
+import { Add, Delete, CalendarToday, DeleteOutline } from '@mui/icons-material';
 import './CargoView.css';
 
 export interface CargoItem {
@@ -26,7 +26,7 @@ interface CargoViewProps {
     readOnly?: boolean;
 }
 
-const CargoView = ({ wellId, onSave, onDelete, readOnly = false }: CargoViewProps) => {
+const CargoView = ({ onSave, onDelete }: CargoViewProps) => {
     const [boats, setBoats] = useState<Boat[]>([
         {
             id: '1',

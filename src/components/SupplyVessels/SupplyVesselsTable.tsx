@@ -6,9 +6,8 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, TextField as MuiTextField,
     Menu, MenuItem, Typography
 } from '@mui/material';
-import { Delete, Add, Edit, Save, Cancel, ViewColumn } from '@mui/icons-material';
+import { Delete, Add, Edit, Save, Cancel } from '@mui/icons-material';
 import './SupplyVesselsTable.css';
-
 export interface SupplyVessel {
     id: string;
     vessel: string;

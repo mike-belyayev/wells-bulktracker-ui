@@ -33,7 +33,6 @@ export interface LastUpdatedProps {
 }
 
 const LastUpdated = ({ 
-    wellId,
     bopSystemsData: initialBopData,
     mudPumpLinersData: initialMudPumpData,
     onBopUpdate,
