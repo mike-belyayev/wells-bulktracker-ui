@@ -1,4 +1,4 @@
-/* src/components/Dashboard/LastUpdated.css */
+/* src/components/Dashboard/LastUpdated.css - Updated */
 
 .last-updated-container {
     display: flex;
@@ -11,47 +11,40 @@
     width: 100%;
 }
 
-/* src/components/Dashboard/LastUpdated.css - Update header to dark */
+.info-table {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: white !important;
+    border-radius: 4px !important;
+    min-width: 0;
+    border: 1px solid #e0e0e0;
+}
 
-.info-table .table-header {
-    padding: 6px 10px;
-    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background-color: #f5f5f5;
     border-bottom: 1px solid #e0e0e0;
 }
 
-.info-table .table-title {
-    font-weight: 600 !important;
-    font-size: 0.7rem !important;
-    color: white !important;
-}
-
-.compact-table {
-    width: 100%;
-}
-
-/* Last Updated table */
-.label-cell {
+.table-title {
     font-weight: 600 !important;
     font-size: 0.65rem !important;
-    padding: 6px 10px !important;
-    background-color: #fafafa;
-    width: 40%;
-    border-bottom: none !important;
+    color: #333;
 }
 
-.value-cell {
-    font-size: 0.65rem !important;
-    padding: 6px 10px !important;
-    font-weight: 500 !important;
-    color: #1976d2;
-    border-bottom: none !important;
+.add-row-btn {
+    padding: 2px !important;
 }
 
 /* BOP Systems Data table */
 .bop-table-container {
-    max-height: 350px;
+    max-height: 300px;
     overflow-y: auto;
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 
 .bop-header-cell {
@@ -70,6 +63,9 @@
     padding: 4px 6px !important;
     font-weight: 500 !important;
     color: #333;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
@@ -80,19 +76,73 @@
     white-space: nowrap;
 }
 
-/* MUD PUMP LINERS table */
+.editing-cell {
+    padding: 2px 4px !important;
+}
+
+/* MUD PUMP LINERS table - ULTRA COMPACT */
+.mud-table {
+    table-layout: fixed;
+}
+
 .pump-header-cell {
     font-weight: 700 !important;
     background-color: #e8e8e8 !important;
-    font-size: 0.6rem !important;
-    padding: 4px 6px !important;
+    font-size: 0.55rem !important;
+    padding: 3px 2px !important;
     white-space: nowrap;
+    text-align: center !important;
 }
 
 .pump-value-cell {
-    font-size: 0.6rem !important;
-    padding: 4px 6px !important;
+    font-size: 0.55rem !important;
+    padding: 3px 2px !important;
     font-family: monospace;
+    text-align: center !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Fixed widths for Mud Pump table */
+.pump-header-cell:first-child,
+.pump-value-cell:first-child {
+    width: 40px;
+    min-width: 40px;
+    max-width: 40px;
+}
+
+.pump-header-cell:nth-child(2),
+.pump-value-cell:nth-child(2) {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+}
+
+.pump-header-cell:nth-child(3),
+.pump-value-cell:nth-child(3) {
+    width: 55px;
+    min-width: 55px;
+    max-width: 55px;
+}
+
+.pump-header-cell:nth-child(4),
+.pump-value-cell:nth-child(4) {
+    width: 55px;
+    min-width: 55px;
+    max-width: 55px;
+}
+
+.actions-cell {
+    width: 120px !important;
+    min-width: 120px !important;
+    text-align: center !important;
+    white-space: nowrap;
+}
+
+.actions-cell .MuiIconButton-root {
+    padding: 2px;
+    margin: 0 1px;
 }
 
 /* Scrollbar */
@@ -123,13 +173,27 @@
     }
     
     .table-title {
-        font-size: 0.65rem !important;
+        font-size: 0.6rem !important;
     }
     
     .bop-system-cell,
-    .bop-date-cell,
-    .pump-value-cell {
+    .bop-date-cell {
         font-size: 0.55rem !important;
-        padding: 3px 4px !important;
+        padding: 3px 3px !important;
+    }
+    
+    .pump-header-cell {
+        font-size: 0.5rem !important;
+        padding: 2px 1px !important;
+    }
+    
+    .pump-value-cell {
+        font-size: 0.5rem !important;
+        padding: 2px 1px !important;
+    }
+    
+    .actions-cell {
+        width: 70px !important;
+        min-width: 70px !important;
     }
 }

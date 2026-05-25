@@ -7,11 +7,11 @@ import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Dashboard';
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
+import wellApiService from '../services/wellApi';
 // Import types from LastUpdated
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
 // Import CasingProfile type from WellInformation
 import type { CasingProfile } from '../components/Dashboard/WellInformation';
-import wellApiService from '../services/wellApi';
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
@@ -22,6 +22,7 @@ const EquipmentPage = () => {
     const [loading, setLoading] = useState(false);
     const [currentWellId, setCurrentWellId] = useState<string | null>(null);
     const [vessels, setVessels] = useState<SupplyVessel[]>([]);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
     
     const [wellData, setWellData] = useState<{
         wellName?: string;
@@ -32,8 +33,8 @@ const EquipmentPage = () => {
     
     const [fluidData] = useState<any>(undefined);
     
-    const [lastUpdatedDate] = useState<string>('15-JAN-2025');
-    const [bopSystemsData] = useState<BopSystem[]>([
+    // BOP Systems and Mud Pump Liners data
+    const [bopSystemsData, setBopSystemsData] = useState<BopSystem[]>([
         { id: '1', system: 'BOP Pressure Test', testDate: '10-JAN-2025', nextDate: '10-FEB-2025' },
         { id: '2', system: 'BSR Pressure Test', testDate: '12-JAN-2025', nextDate: '12-FEB-2025' },
         { id: '3', system: 'BOP Function Test', testDate: '08-JAN-2025', nextDate: '08-FEB-2025' },
@@ -48,7 +49,7 @@ const EquipmentPage = () => {
         { id: '12', system: 'WH Glycol Injection', testDate: '17-JAN-2025', nextDate: '17-FEB-2025' }
     ]);
     
-    const [mudPumpLinersData] = useState<MudPumpLiner[]>([
+    const [mudPumpLinersData, setMudPumpLinersData] = useState<MudPumpLiner[]>([
         { id: '1', pump: 1, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
         { id: '2', pump: 2, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
         { id: '3', pump: 3, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
@@ -61,13 +62,33 @@ const EquipmentPage = () => {
         severity: 'success'
     });
 
-    const { wellApi, supplyVesselApi } = wellApiService;
+    const { wellApi, supplyVesselApi, bopSystemsApi, mudPumpLinersApi } = wellApiService;
 
+    // Format date for display
+    const formatLastUpdated = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    // Load well data from API
     const loadWellData = async (wellId: string) => {
         try {
             setLoading(true);
             const well = await wellApi.getWell(wellId);
             setCurrentWellId(well._id);
+            
+            // Set last updated from well's updatedAt timestamp
+            if (well.updatedAt) {
+                setLastUpdated(formatLastUpdated(well.updatedAt));
+            }
             
             setWellData({
                 wellName: well.wellName,
@@ -76,6 +97,17 @@ const EquipmentPage = () => {
                 casingProfiles: well.casingProfile
             });
             
+            // Load BOP Systems
+            if (well.bopSystems && Array.isArray(well.bopSystems)) {
+                setBopSystemsData(well.bopSystems);
+            }
+            
+            // Load Mud Pump Liners
+            if (well.mudPumpLiners && Array.isArray(well.mudPumpLiners)) {
+                setMudPumpLinersData(well.mudPumpLiners);
+            }
+            
+            // Load supply vessels
             if (well.supplyVessels && Array.isArray(well.supplyVessels)) {
                 const formattedVessels = well.supplyVessels.map((vessel: any, index: number) => ({
                     id: vessel._id || index.toString(),
@@ -102,6 +134,12 @@ const EquipmentPage = () => {
         }
     };
 
+    // Update last updated after any save operation
+    const updateLastUpdated = () => {
+        setLastUpdated(formatLastUpdated(new Date().toISOString()));
+    };
+
+    // Get well ID based on user's rig
     useEffect(() => {
         const fetchWellId = async () => {
             try {
@@ -136,6 +174,37 @@ const EquipmentPage = () => {
         }
     };
 
+    // BOP Systems handlers
+    const handleBopUpdate = async (bopSystems: BopSystem[]) => {
+        if (currentWellId) {
+            try {
+                await bopSystemsApi.updateBopSystems(currentWellId, bopSystems);
+                setBopSystemsData(bopSystems);
+                updateLastUpdated();
+                showSnackbar('BOP systems updated', 'success');
+            } catch (err) {
+                console.error('Failed to update BOP systems:', err);
+                showSnackbar('Failed to update BOP systems', 'error');
+            }
+        }
+    };
+
+    // Mud Pump Liners handlers
+    const handleMudPumpUpdate = async (mudPumpLiners: MudPumpLiner[]) => {
+        if (currentWellId) {
+            try {
+                await mudPumpLinersApi.updateMudPumpLiners(currentWellId, mudPumpLiners);
+                setMudPumpLinersData(mudPumpLiners);
+                updateLastUpdated();
+                showSnackbar('Mud pump liners updated', 'success');
+            } catch (err) {
+                console.error('Failed to update mud pump liners:', err);
+                showSnackbar('Failed to update mud pump liners', 'error');
+            }
+        }
+    };
+
+    // Supply Vessel CRUD operations with API
     const handleVesselsChange = async (newVessels: SupplyVessel[]) => {
         const isAddOperation = newVessels.length > vessels.length;
         const isDeleteOperation = newVessels.length < vessels.length;
@@ -158,6 +227,7 @@ const EquipmentPage = () => {
                     await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
                     showSnackbar('Vessel added successfully', 'success');
                     await loadWellData(currentWellId);
+                    updateLastUpdated();
                 } catch (err) {
                     console.error('Failed to add vessel:', err);
                     showSnackbar('Failed to add vessel', 'error');
@@ -171,6 +241,7 @@ const EquipmentPage = () => {
                     const index = vessels.findIndex(v => v.id === deletedVessel.id);
                     await supplyVesselApi.deleteSupplyVessel(currentWellId, index);
                     showSnackbar('Vessel deleted successfully', 'success');
+                    updateLastUpdated();
                 } catch (err) {
                     console.error('Failed to delete vessel:', err);
                     showSnackbar('Failed to delete vessel', 'error');
@@ -200,6 +271,7 @@ const EquipmentPage = () => {
             };
             await supplyVesselApi.updateSupplyVessel(currentWellId, index, apiVessel);
             showSnackbar('Vessel saved successfully', 'success');
+            updateLastUpdated();
         } catch (err) {
             console.error('Failed to save vessel:', err);
             showSnackbar('Failed to save vessel', 'error');
@@ -214,6 +286,7 @@ const EquipmentPage = () => {
             const index = vessels.findIndex(v => v.id === id);
             await supplyVesselApi.deleteSupplyVessel(currentWellId, index);
             showSnackbar('Vessel deleted successfully', 'success');
+            updateLastUpdated();
         } catch (err) {
             console.error('Failed to delete vessel:', err);
             showSnackbar('Failed to delete vessel', 'error');
@@ -250,6 +323,15 @@ const EquipmentPage = () => {
                         </Button>
                     </Box>
 
+                    {/* Last Updated in the middle */}
+                    <Box className="header-center">
+                        {lastUpdated && (
+                            <Typography variant="body2" className="last-updated-text">
+                                Updated: {lastUpdated}
+                            </Typography>
+                        )}
+                    </Box>
+
                     <Box className="header-right">
                         <Box className="dev-credit">
                             <Typography variant="caption">App developed for Wells Team by:</Typography>
@@ -277,7 +359,7 @@ const EquipmentPage = () => {
             </AppBar>
 
             <div className="main-content">
-                {/* TOP SECTION - 3 columns (removed cargo) */}
+                {/* TOP SECTION - 3 columns */}
                 <div className="top-section">
                     <div className="three-column-layout">
                         <div className="column col-well">
@@ -286,17 +368,20 @@ const EquipmentPage = () => {
                         <div className="column col-mud">
                             <MudPitFluidData fluidData={fluidData} />
                         </div>
-                        <div className="column col-last-updated">
+                        <div className="column col-tables">
                             <LastUpdated 
-                                lastUpdatedDate={lastUpdatedDate}
+                                wellId={currentWellId || undefined}
                                 bopSystemsData={bopSystemsData}
                                 mudPumpLinersData={mudPumpLinersData}
+                                onBopUpdate={handleBopUpdate}
+                                onMudPumpUpdate={handleMudPumpUpdate}
+                                readOnly={!isAdmin}
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* BOTTOM SECTION - Supply Vessels only (Cargo is integrated INSIDE SupplyVesselsTable header) */}
+                {/* BOTTOM SECTION - Supply Vessels */}
                 <div className="bottom-section">
                     <SupplyVesselsTable 
                         vessels={vessels}

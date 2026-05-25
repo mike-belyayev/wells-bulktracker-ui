@@ -64,6 +64,21 @@
     color: #4caf50 !important;
 }
 
+/* Header center section for last updated */
+.header-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.last-updated-text {
+    font-size: 0.7rem !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-family: monospace !important;
+    letter-spacing: 0.5px;
+}
+
 .header-right {
     display: flex;
     align-items: center;
@@ -131,30 +146,31 @@
     overflow: visible;
 }
 
-/* ==================== THREE COLUMN LAYOUT (for top section) ==================== */
+/* ==================== THREE COLUMN LAYOUT - HORIZONTAL ==================== */
 .three-column-layout {
-    display: flex;
+    display: flex !important;
+    flex-direction: row !important;
     gap: 12px;
     height: 100%;
     width: 100%;
     min-width: 0;
 }
 
-/* Column widths using flex-grow */
+/* Column widths: First and Last 20%, Middle 60% */
 .col-well {
-    flex: 2;
+    flex: 0 0 20%;
     min-width: 0;
     overflow: hidden;
 }
 
 .col-mud {
-    flex: 5;
+    flex: 0 0 60%;
     min-width: 0;
     overflow: hidden;
 }
 
-.col-last-updated {
-    flex: 2;
+.col-tables {
+    flex: 0 0 20%;
     min-width: 0;
     overflow: hidden;
 }
@@ -162,7 +178,7 @@
 /* Ensure all content respects column boundaries */
 .col-well > *, 
 .col-mud > *, 
-.col-last-updated > * {
+.col-tables > * {
     height: 100%;
     width: 100%;
 }
@@ -186,26 +202,14 @@
     color: #666;
 }
 
-/* Responsive breakpoints for 3-column layout */
-@media (max-width: 1600px) {
-    .three-column-layout {
-        gap: 10px;
-    }
-}
-
-@media (max-width: 1400px) {
-    .three-column-layout {
-        gap: 8px;
-    }
-}
-
+/* Responsive */
 @media (max-width: 1200px) {
     .three-column-layout {
         flex-wrap: wrap;
         gap: 12px;
     }
     
-    .col-well, .col-mud, .col-last-updated {
+    .col-well, .col-mud, .col-tables {
         flex: auto;
         min-width: 280px;
     }
@@ -222,6 +226,10 @@
     }
     
     .dev-credit {
+        display: none;
+    }
+    
+    .header-center {
         display: none;
     }
     
