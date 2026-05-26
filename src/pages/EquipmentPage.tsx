@@ -5,7 +5,7 @@ import { Settings, Dashboard, Refresh, ExitToApp, ContentCopy } from '@mui/icons
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, BOPSystems } from '../components/Dashboard';
-import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
+import { SupplyVesselsTable } from '../components/SupplyVessels';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { useWellData } from '../hooks/useWellData';
 import { useWellOperations } from '../hooks/useWellOperations';

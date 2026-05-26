@@ -32,7 +32,7 @@ export interface CasingProfile {
 const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
-    const [containerHeight, setContainerHeight] = useState(500);
+    const [, setContainerHeight] = useState(500);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
     const [editingCasingIndex, setEditingCasingIndex] = useState<number | null>(null);
