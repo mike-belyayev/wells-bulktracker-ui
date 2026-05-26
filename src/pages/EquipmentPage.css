@@ -69,8 +69,8 @@
 }
 
 .last-updated-text {
-    font-size: 0.65rem !important;
-    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 0.9rem !important;
+    color: rgb(21, 255, 0) !important;
     font-family: monospace !important;
     letter-spacing: 0.5px;
 }

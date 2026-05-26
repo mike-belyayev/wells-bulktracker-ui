@@ -37,7 +37,7 @@ export interface BOPSystemsProps {
     readOnly?: boolean;
 }
 
-// Fixed date formatting functions
+// Helper functions for date formatting - DD-MMM-YY
 const formatDateToDisplay = (dateString: string): string => {
     if (!dateString) return '—';
     try {
@@ -138,7 +138,8 @@ const formatDateForSave = (dateString: string): string => {
     return dateString;
 };
 
-const isDateApproaching = (dateString: string): boolean => {
+// Function to check if date is urgent (past OR within 3 days)
+const isDateUrgent = (dateString: string): boolean => {
     if (!dateString || dateString === '—') return false;
     
     try {
@@ -163,7 +164,8 @@ const isDateApproaching = (dateString: string): boolean => {
         
         const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         
-        return diffDays >= 0 && diffDays <= 3;
+        // Return true if date is in the past OR within 3 days in future
+        return diffDays < 0 || (diffDays >= 0 && diffDays <= 3);
     } catch {
         return false;
     }
@@ -339,7 +341,7 @@ const BOPSystems = ({
         }
     };
 
-    // Mud Pump Liners handlers (unchanged)
+    // Mud Pump Liners handlers
     const handleEditMud = (index: number) => {
         const liner = mudPumpLiners[index];
         setEditingMudIndex(index);
@@ -470,7 +472,7 @@ const BOPSystems = ({
                         </TableHead>
                         <TableBody>
                             {bopSystems.map((system, idx) => {
-                                const isApproaching = isDateApproaching(system.nextDate);
+                                const isUrgent = isDateUrgent(system.nextDate);
                                 return (
                                     <TableRow key={system.id || idx}>
                                         {editingBopIndex === idx ? (
@@ -529,8 +531,8 @@ const BOPSystems = ({
                                                 </TableCell>
                                                 <TableCell className="bop-date-cell-dark">{system.testDate || '—'}</TableCell>
                                                 <TableCell 
-                                                    className={`bop-date-cell-dark ${isApproaching ? 'date-approaching' : ''}`}
-                                                    title={isApproaching ? '⚠️ Date is approaching (3 days or less)!' : ''}
+                                                    className={`bop-date-cell-dark ${isUrgent ? 'date-urgent' : ''}`}
+                                                    title={isUrgent ? '⚠️ Date is past or within 3 days!' : ''}
                                                 >
                                                     {system.nextDate || '—'}
                                                 </TableCell>
@@ -551,7 +553,7 @@ const BOPSystems = ({
                 </TableContainer>
             </Paper>
 
-            {/* MUD PUMP LINERS Table - same as before */}
+            {/* MUD PUMP LINERS Table */}
             <Paper className="info-table" elevation={0}>
                 <div className="table-header-dark">
                     <Typography variant="h6" className="table-title-dark">
@@ -666,7 +668,8 @@ const BOPSystems = ({
                         value={newBop.System}
                         onChange={(e) => setNewBop({ ...newBop, System: e.target.value })}
                     />
-                    <TextField                        margin="dense"
+                    <TextField
+                        margin="dense"
                         label="Test Date"
                         type="date"
                         fullWidth

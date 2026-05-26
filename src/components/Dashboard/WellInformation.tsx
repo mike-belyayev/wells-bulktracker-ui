@@ -249,16 +249,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                 {/* Casing Profile Diagram */}
                 <div className="casing-diagram-container">
                     <div className="diagram-wrapper" style={{ minHeight: `${containerHeight * 0.45}px` }}>
-                        {/* Depth scale on the left */}
-                        <div className="depth-scale">
-                            <div className="depth-marker" style={{ bottom: '0%' }}>0</div>
-                            <div className="depth-marker" style={{ bottom: '25%' }}>{Math.round(maxDepth * 0.25)}</div>
-                            <div className="depth-marker" style={{ bottom: '50%' }}>{Math.round(maxDepth * 0.5)}</div>
-                            <div className="depth-marker" style={{ bottom: '75%' }}>{Math.round(maxDepth * 0.75)}</div>
-                            <div className="depth-marker" style={{ bottom: '100%' }}>{maxDepth}</div>
-                        </div>
-
-                        <div className="diagram-area" style={{ minHeight: `${containerHeight * 0.4}px` }}>
+                                <div className="diagram-area" style={{ minHeight: `${containerHeight * 0.4}px` }}>
                             {adjustedProfiles && adjustedProfiles.map((profile, index) => {
                                 const heightPercent = profile.adjustedDepth;
                                 const leftPosition = startLeft + (index * horizontalSpacing);
