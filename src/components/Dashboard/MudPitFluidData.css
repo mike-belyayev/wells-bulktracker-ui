@@ -60,19 +60,22 @@
 }
 
 .pit-header {
-    padding: 1px 8px;
+    padding: 0 8px;
     background: rgba(0,0,0,0.04);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .pit-name {
     font-weight: 800;
-    font-size: 0.65rem;
+    font-size: 0.7rem !important;
     color: #1a1a2e;
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .pit-edit-btn {

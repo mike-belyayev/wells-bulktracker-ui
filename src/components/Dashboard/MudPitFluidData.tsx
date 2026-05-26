@@ -24,7 +24,6 @@ export interface PitData {
     values: PitValue[];
 }
 
-// Group colors - just color names
 const GROUP_COLORS = [
     { name: 'None', value: '', bg: '#ffffff', border: '#e0e0e0' },
     { name: 'Light Yellow', value: 'yellow', bg: '#FFF9C4', border: '#F9A825' },
@@ -38,7 +37,7 @@ const GROUP_COLORS = [
     { name: 'Light Lime', value: 'lime', bg: '#F0F4C3', border: '#827717' },
 ];
 
-const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
+const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
     const [pits, setPits] = useState<PitData[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
