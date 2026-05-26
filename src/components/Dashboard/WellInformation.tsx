@@ -1,6 +1,6 @@
 // src/components/Dashboard/WellInformation.tsx
-import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Edit, Save, Cancel, Add, Delete } from '@mui/icons-material';
+import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { useEffect, useRef, useState } from 'react';
 import './WellInformation.css';
 
@@ -9,24 +9,27 @@ export interface WellInformationProps {
         wellName?: string;
         waterDepth?: number;
         airGap?: number;
-        HPWH?: number;  // API uses HPWH (capital)
+        HPWH?: number;
         casingProfiles?: CasingProfile[];
     };
     wellId?: string;
     onUpdate?: (data: any) => Promise<void>;
     onCasingUpdate?: (data: CasingProfile[]) => Promise<void>;
+    onRefresh?: () => Promise<void>;  // Add refresh callback
     readOnly?: boolean;
 }
 
 export interface CasingProfile {
-    id: string;
+    index: number;
     size: string;
+    description?: string;
+    type: 'casing' | 'liner';
     depth: number;
-    mMD: number;
-    mTVD: number;
+    startDepth?: number;
+    id?: string;
 }
 
-const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly = false }: WellInformationProps) => {
+const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
     const [containerHeight, setContainerHeight] = useState(500);
@@ -34,7 +37,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
     const [editingCasingIndex, setEditingCasingIndex] = useState<number | null>(null);
     const [editingCasingData, setEditingCasingData] = useState<Partial<CasingProfile>>({});
-    const [newCasing, setNewCasing] = useState<Partial<CasingProfile>>({ size: '', depth: 0, mMD: 0, mTVD: 0 });
+    const [newCasing, setNewCasing] = useState<Partial<CasingProfile>>({ size: '', type: 'casing', depth: 0, description: '' });
     
     const [editData, setEditData] = useState({
         wellName: '',
@@ -43,41 +46,45 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
         HPWH: 0
     });
 
-    // Default mock data if none provided
+    // Default mock data
     const defaultWellData = {
         wellName: "WELL B-07",
         waterDepth: 1245,
         airGap: 28,
         HPWH: 350,
         casingProfiles: [
-            { id: '1', size: "36\"", depth: 120, mMD: 120, mTVD: 120 },
-            { id: '2', size: "28\"", depth: 450, mMD: 450, mTVD: 448 },
-            { id: '3', size: "22\"", depth: 850, mMD: 850, mTVD: 845 },
-            { id: '4', size: "16\"", depth: 1250, mMD: 1250, mTVD: 1240 },
-            { id: '5', size: "7\"", depth: 1890, mMD: 1890, mTVD: 1875 }
+            { index: 0, size: "36\"", type: "casing" as const, depth: 120, description: "Conductor" },
+            { index: 1, size: "28\"", type: "casing" as const, depth: 450, description: "Surface" },
+            { index: 2, size: "22\"", type: "casing" as const, depth: 850, description: "Intermediate" },
+            { index: 3, size: "16\"", type: "casing" as const, depth: 1250, description: "Intermediate" },
+            { index: 4, size: "7\"", type: "liner" as const, depth: 1890, startDepth: 1250, description: "Production Liner" }
         ]
     };
 
-    // Safely access data with fallbacks
     const data = wellData || defaultWellData;
-    let casingProfiles = data.casingProfiles || defaultWellData.casingProfiles;
+    let casingProfiles: CasingProfile[] = (data.casingProfiles || defaultWellData.casingProfiles).map((p, idx) => ({ 
+        ...p, 
+        index: idx,
+        type: p.type as 'casing' | 'liner'
+    }));
     
-    // Sort so deepest casing (largest depth) is on the left
-    casingProfiles = [...casingProfiles].sort((a, b) => b.depth - a.depth);
-    
-    // Set custom depths for proportional sizing
-    const adjustedProfiles = casingProfiles.map((profile, index) => {
-        if (index === 0) {
-            return { ...profile, adjustedDepth: 90 };
-        } else {
-            const total = casingProfiles.length - 1;
-            const progress = index / total;
-            const adjustedHeight = 90 - (progress * 70);
-            return { ...profile, adjustedDepth: adjustedHeight };
-        }
-    });
+    // Sort by depth for diagram
+    const sortedProfiles = [...casingProfiles].sort((a, b) => a.depth - b.depth);
+    const maxDepth = Math.max(...sortedProfiles.map(p => p.depth), 2000);
 
-    // Calculate dynamic scaling
+    // Calculate positions for diagram
+    const getProfilePosition = (profile: CasingProfile) => {
+        const startPercent = ((profile.startDepth || 0) / maxDepth) * 100;
+        const endPercent = (profile.depth / maxDepth) * 100;
+        const heightPercent = endPercent - startPercent;
+        
+        return {
+            top: `${startPercent}%`,
+            height: `${heightPercent}%`,
+            isLiner: profile.type === 'liner'
+        };
+    };
+
     useEffect(() => {
         const updateScale = () => {
             if (containerRef.current) {
@@ -87,41 +94,36 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                 setScale(newScale);
             }
         };
-
         updateScale();
         window.addEventListener('resize', updateScale);
         return () => window.removeEventListener('resize', updateScale);
     }, []);
 
-    // Initialize edit dialog data when wellData changes
     useEffect(() => {
         if (data) {
             setEditData({
                 wellName: data.wellName || '',
                 waterDepth: data.waterDepth || 0,
                 airGap: data.airGap || 0,
-                HPWH: (data as any).HPWH || (data as any).hpwh || 0
+                HPWH: (data as any).HPWH || 0
             });
         }
     }, [data]);
 
-    const handleEditClick = () => {
-        setEditDialogOpen(true);
-    };
-
-    const handleEditClose = () => {
-        setEditDialogOpen(false);
-    };
+    const handleEditClick = () => setEditDialogOpen(true);
+    const handleEditClose = () => setEditDialogOpen(false);
 
     const handleEditSave = async () => {
         if (onUpdate && wellId) {
             try {
                 await onUpdate({
                     wellName: editData.wellName,
-                    waterDepth: editData.waterDepth.toString(),
-                    airGap: editData.airGap.toString(),
-                    HPWH: editData.HPWH.toString()
+                    waterDepth: editData.waterDepth,
+                    airGap: editData.airGap,
+                    HPWH: editData.HPWH
                 });
+                // Refresh data after save
+                if (onRefresh) await onRefresh();
                 setEditDialogOpen(false);
             } catch (err) {
                 console.error('Failed to update well info:', err);
@@ -136,7 +138,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
     // Casing profile handlers
     const handleCasingEdit = (index: number, profile: CasingProfile) => {
         setEditingCasingIndex(index);
-        setEditingCasingData(profile);
+        setEditingCasingData({ ...profile });
     };
 
     const handleCasingCancel = () => {
@@ -146,9 +148,15 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
 
     const handleCasingSave = async () => {
         if (editingCasingIndex !== null && editingCasingData && onCasingUpdate) {
-            const updatedProfiles = [...casingProfiles];
-            updatedProfiles[editingCasingIndex] = { ...updatedProfiles[editingCasingIndex], ...editingCasingData };
+            const updatedProfiles: CasingProfile[] = [...casingProfiles];
+            updatedProfiles[editingCasingIndex] = { 
+                ...updatedProfiles[editingCasingIndex], 
+                ...editingCasingData,
+                type: (editingCasingData.type as 'casing' | 'liner') || updatedProfiles[editingCasingIndex].type
+            };
+            updatedProfiles.forEach((p, idx) => { p.index = idx; });
             await onCasingUpdate(updatedProfiles);
+            if (onRefresh) await onRefresh();
             setEditingCasingIndex(null);
             setEditingCasingData({});
         }
@@ -161,50 +169,68 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
     const handleAddCasing = async () => {
         if (newCasing.size && onCasingUpdate) {
             const newProfile: CasingProfile = {
-                id: Date.now().toString(),
+                index: casingProfiles.length,
                 size: newCasing.size,
+                type: (newCasing.type || 'casing') as 'casing' | 'liner',
                 depth: newCasing.depth || 0,
-                mMD: newCasing.mMD || 0,
-                mTVD: newCasing.mTVD || 0
+                description: newCasing.description || '',
+                startDepth: newCasing.type === 'liner' ? (newCasing.startDepth || 0) : undefined
             };
-            const updatedProfiles = [...casingProfiles, newProfile].sort((a, b) => b.depth - a.depth);
+            const updatedProfiles = [...casingProfiles, newProfile].sort((a, b) => a.depth - b.depth);
+            updatedProfiles.forEach((p, idx) => { p.index = idx; });
             await onCasingUpdate(updatedProfiles);
+            if (onRefresh) await onRefresh();
             setCasingDialogOpen(false);
-            setNewCasing({ size: '', depth: 0, mMD: 0, mTVD: 0 });
+            setNewCasing({ size: '', type: 'casing', depth: 0, description: '' });
         }
     };
 
     const handleDeleteCasing = async (index: number) => {
         if (window.confirm('Are you sure you want to delete this casing profile?')) {
             const updatedProfiles = casingProfiles.filter((_, i) => i !== index);
+            updatedProfiles.forEach((p, idx) => { p.index = idx; });
             if (onCasingUpdate) await onCasingUpdate(updatedProfiles);
+            if (onRefresh) await onRefresh();
         }
     };
 
-    // Dynamic font sizes
-    const titleFontSize = `${Math.max(12, 14 * scale)}px`;
-    const labelFontSize = `${Math.max(9, 11 * scale)}px`;
-    const valueFontSize = `${Math.max(10, 13 * scale)}px`;
-    const depthFontSize = `${Math.max(8, 9 * scale)}px`;
-    const lineWidth = Math.max(1.5, 2 * scale);
-    const tipWidth = Math.max(8, 12 * scale);
-    const labelLeftOffset = Math.max(10, 14 * scale);
-    const labelPadding = Math.max(2, 4 * scale);
-    const horizontalSpacing = Math.max(12, 16 * scale);
-    const startLeft = Math.max(5, 8 * scale);
+    const moveCasingUp = async (index: number) => {
+        if (index === 0) return;
+        const newProfiles = [...casingProfiles];
+        [newProfiles[index - 1], newProfiles[index]] = [newProfiles[index], newProfiles[index - 1]];
+        newProfiles.forEach((p, idx) => { p.index = idx; });
+        if (onCasingUpdate) await onCasingUpdate(newProfiles);
+        if (onRefresh) await onRefresh();
+    };
+
+    const moveCasingDown = async (index: number) => {
+        if (index === casingProfiles.length - 1) return;
+        const newProfiles = [...casingProfiles];
+        [newProfiles[index + 1], newProfiles[index]] = [newProfiles[index], newProfiles[index + 1]];
+        newProfiles.forEach((p, idx) => { p.index = idx; });
+        if (onCasingUpdate) await onCasingUpdate(newProfiles);
+        if (onRefresh) await onRefresh();
+    };
+
+    const lineWidth = Math.max(2, 2.5 * scale);
+    const tipWidth = Math.max(10, 14 * scale);
+    const labelLeftOffset = Math.max(12, 16 * scale);
+    const labelPadding = Math.max(3, 5 * scale);
+    const horizontalSpacing = Math.max(18, 22 * scale);
+    const startLeft = Math.max(15, 20 * scale);
 
     return (
         <Paper className="info-panel" elevation={3}>
             <div className="panel-header">
-                <Typography variant="h6" className="panel-title" style={{ fontSize: titleFontSize }}>
+                <Typography variant="h6" className="panel-title">
                     Well Information
                 </Typography>
             </div>
             <Divider />
             <div className="panel-content" ref={containerRef}>
-                {/* Well Name - Large bold blue */}
-                <div className="well-name-container">
-                    <Typography className="well-name-large" style={{ fontSize: `${Math.max(16, 20 * scale)}px` }}>
+                {/* Well Name */}
+                <div className="well-name-section">
+                    <Typography className="well-name-large">
                         {data.wellName || 'N/A'}
                     </Typography>
                     {!readOnly && (
@@ -214,72 +240,69 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                     )}
                 </div>
 
-                {/* Well Metadata - Inline rows */}
-                <div className="well-metadata-inline">
-                    <div className="metadata-inline-row">
-                        <span className="metadata-label-inline" style={{ fontSize: labelFontSize }}>Water Depth:</span>
-                        <span className="metadata-value-inline" style={{ fontSize: valueFontSize }}>{data.waterDepth || 0} m</span>
+                {/* 3-Value Table */}
+                <div className="metrics-table">
+                    <div className="metrics-header">
+                        <span className="metric-header-cell">Water Depth</span>
+                        <span className="metric-header-cell">Air Gap</span>
+                        <span className="metric-header-cell">HPWH</span>
                     </div>
-                    <div className="metadata-inline-row">
-                        <span className="metadata-label-inline" style={{ fontSize: labelFontSize }}>Air Gap:</span>
-                        <span className="metadata-value-inline" style={{ fontSize: valueFontSize }}>{data.airGap || 0} m</span>
-                    </div>
-                    <div className="metadata-inline-row">
-                        <span className="metadata-label-inline" style={{ fontSize: labelFontSize }}>HPWH:</span>
-                        <span className="metadata-value-inline" style={{ fontSize: valueFontSize }}>{(data as any).HPWH || (data as any).hpwh || 0} m</span>
+                    <div className="metrics-values">
+                        <span className="metric-value-cell">{data.waterDepth || 0} m</span>
+                        <span className="metric-value-cell">{data.airGap || 0} m</span>
+                        <span className="metric-value-cell">{(data as any).HPWH || 0} m</span>
                     </div>
                 </div>
 
-                <Divider className="section-divider" />
-
-                {/* Casing Profile Header with Edit Button */}
-                <div className="casing-header">
-                    <Typography variant="subtitle2" className="diagram-title" style={{ fontSize: titleFontSize }}>
-                        Casing Profile
-                    </Typography>
-                    {!readOnly && (
-                        <IconButton size="small" onClick={() => setCasingDialogOpen(true)} className="casing-edit-btn" title="Edit Casing Profiles">
-                            <Edit fontSize="small" />
-                        </IconButton>
-                    )}
-                </div>
-                
-                {/* Casing Profile Diagram */}
+                {/* Casing Profile Diagram - takes remaining space, no depth scale */}
                 <div className="casing-diagram-container">
-                    <div className="diagram-wrapper" style={{ minHeight: `${containerHeight * 0.45}px` }}>
-                                <div className="diagram-area" style={{ minHeight: `${containerHeight * 0.4}px` }}>
-                            {adjustedProfiles && adjustedProfiles.map((profile, index) => {
-                                const heightPercent = profile.adjustedDepth;
-                                const leftPosition = startLeft + (index * horizontalSpacing);
+                    <div className="diagram-wrapper">
+                        <div className="diagram-area">
+                            {sortedProfiles.map((profile, idx) => {
+                                const pos = getProfilePosition(profile);
+                                const leftPosition = startLeft + (idx * horizontalSpacing);
                                 
                                 return (
                                     <div 
-                                        key={profile.id}
-                                        className="casing-string"
+                                        key={profile.id || idx}
+                                        className={`casing-string ${profile.type}`}
                                         style={{
-                                            height: `${heightPercent}%`,
-                                            top: '0%',
+                                            height: pos.height,
+                                            top: pos.top,
                                             left: `${leftPosition}px`,
                                         }}
                                     >
                                         <div className="casing-line" style={{ width: `${lineWidth}px` }} />
-                                        <div className="casing-tip-flag" style={{
+                                        {/* Top tip for liner */}
+                                        {profile.type === 'liner' && (
+                                            <div className="casing-top-flat" style={{
+                                                width: `${tipWidth}px`,
+                                                height: `${lineWidth * 2}px`,
+                                                top: `-${lineWidth}px`,
+                                                left: `-${lineWidth / 2}px`
+                                            }} />
+                                        )}
+                                        {/* Bottom shoe tip */}
+                                        <div className="casing-tip-shoe" style={{
                                             borderLeft: `${tipWidth}px solid #000000`,
-                                            borderTop: `${tipWidth * 0.35}px solid transparent`,
-                                            borderBottom: `${tipWidth * 0.35}px solid transparent`,
+                                            borderTop: `${tipWidth * 0.4}px solid transparent`,
+                                            borderBottom: `${tipWidth * 0.4}px solid transparent`,
                                             bottom: `${-lineWidth}px`,
                                             left: `${-lineWidth / 2}px`
                                         }} />
                                         <div className="casing-label" style={{
-                                            bottom: `${-lineWidth * 1.5}px`,
+                                            bottom: `${-lineWidth * 2}px`,
                                             left: `${labelLeftOffset}px`,
                                             padding: `${labelPadding * 0.5}px ${labelPadding}px`
                                         }}>
-                                            <Typography variant="caption" className="casing-size" style={{ fontSize: labelFontSize }}>
+                                            <Typography variant="caption" className="casing-size">
                                                 {profile.size}
                                             </Typography>
-                                            <Typography variant="caption" className="casing-depth" style={{ fontSize: depthFontSize }}>
-                                                {profile.mMD}m MD ({profile.mTVD}m TVD)
+                                            <Typography variant="caption" className="casing-depth">
+                                                {profile.depth}m
+                                            </Typography>
+                                            <Typography variant="caption" className="casing-type">
+                                                {profile.type}
                                             </Typography>
                                         </div>
                                     </div>
@@ -298,9 +321,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                         autoFocus
                         margin="dense"
                         label="Well Name"
-                        type="text"
                         fullWidth
-                        variant="outlined"
                         value={editData.wellName}
                         onChange={(e) => handleInputChange('wellName', e.target.value)}
                     />
@@ -309,7 +330,6 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                         label="Water Depth (m)"
                         type="number"
                         fullWidth
-                        variant="outlined"
                         value={editData.waterDepth}
                         onChange={(e) => handleInputChange('waterDepth', parseFloat(e.target.value) || 0)}
                     />
@@ -318,7 +338,6 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                         label="Air Gap (m)"
                         type="number"
                         fullWidth
-                        variant="outlined"
                         value={editData.airGap}
                         onChange={(e) => handleInputChange('airGap', parseFloat(e.target.value) || 0)}
                     />
@@ -327,14 +346,13 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                         label="HPWH (m)"
                         type="number"
                         fullWidth
-                        variant="outlined"
                         value={editData.HPWH}
                         onChange={(e) => handleInputChange('HPWH', parseFloat(e.target.value) || 0)}
                     />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleEditClose}>Cancel</Button>
-                    <Button onClick={handleEditSave} variant="contained" color="primary">Save Changes</Button>
+                    <Button onClick={handleEditSave} variant="contained" color="primary">Save</Button>
                 </DialogActions>
             </Dialog>
 
@@ -344,7 +362,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                 <DialogContent>
                     <div className="casing-edit-list">
                         {casingProfiles.map((profile, idx) => (
-                            <div key={profile.id} className="casing-edit-row">
+                            <div key={profile.id || idx} className="casing-edit-row">
                                 {editingCasingIndex === idx ? (
                                     <div className="casing-edit-fields">
                                         <TextField
@@ -354,6 +372,17 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                                             onChange={(e) => handleCasingInputChange('size', e.target.value)}
                                             sx={{ width: 80 }}
                                         />
+                                        <FormControl size="small" sx={{ width: 100 }}>
+                                            <InputLabel>Type</InputLabel>
+                                            <Select
+                                                value={editingCasingData.type || 'casing'}
+                                                label="Type"
+                                                onChange={(e) => handleCasingInputChange('type', e.target.value)}
+                                            >
+                                                <MenuItem value="casing">Casing</MenuItem>
+                                                <MenuItem value="liner">Liner</MenuItem>
+                                            </Select>
+                                        </FormControl>
                                         <TextField
                                             size="small"
                                             label="Depth (m)"
@@ -364,20 +393,17 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                                         />
                                         <TextField
                                             size="small"
-                                            label="MD (m)"
-                                            type="number"
-                                            value={editingCasingData.mMD || 0}
-                                            onChange={(e) => handleCasingInputChange('mMD', parseFloat(e.target.value) || 0)}
-                                            sx={{ width: 100 }}
+                                            label="Description"
+                                            value={editingCasingData.description || ''}
+                                            onChange={(e) => handleCasingInputChange('description', e.target.value)}
+                                            sx={{ width: 120 }}
                                         />
-                                        <TextField
-                                            size="small"
-                                            label="TVD (m)"
-                                            type="number"
-                                            value={editingCasingData.mTVD || 0}
-                                            onChange={(e) => handleCasingInputChange('mTVD', parseFloat(e.target.value) || 0)}
-                                            sx={{ width: 100 }}
-                                        />
+                                        <IconButton size="small" onClick={() => moveCasingUp(idx)} disabled={idx === 0}>
+                                            <ArrowUpward fontSize="small" />
+                                        </IconButton>
+                                        <IconButton size="small" onClick={() => moveCasingDown(idx)} disabled={idx === casingProfiles.length - 1}>
+                                            <ArrowDownward fontSize="small" />
+                                        </IconButton>
                                         <IconButton size="small" onClick={handleCasingSave} color="primary">
                                             <Save fontSize="small" />
                                         </IconButton>
@@ -388,9 +414,9 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                                 ) : (
                                     <div className="casing-edit-row-content">
                                         <span className="casing-edit-size">{profile.size}</span>
-                                        <span className="casing-edit-depth">Depth: {profile.depth}m</span>
-                                        <span className="casing-edit-md">MD: {profile.mMD}m</span>
-                                        <span className="casing-edit-tvd">TVD: {profile.mTVD}m</span>
+                                        <span className="casing-edit-type">{profile.type}</span>
+                                        <span className="casing-edit-depth">{profile.depth}m</span>
+                                        <span className="casing-edit-desc">{profile.description || '—'}</span>
                                         <IconButton size="small" onClick={() => handleCasingEdit(idx, profile)} color="primary">
                                             <Edit fontSize="small" />
                                         </IconButton>
@@ -404,11 +430,22 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                         <div className="casing-add-row">
                             <TextField
                                 size="small"
-                                label="New Size"
+                                label="Size"
                                 value={newCasing.size}
                                 onChange={(e) => setNewCasing({ ...newCasing, size: e.target.value })}
                                 sx={{ width: 80 }}
                             />
+                            <FormControl size="small" sx={{ width: 100 }}>
+                                <InputLabel>Type</InputLabel>
+                                <Select
+                                    value={newCasing.type || 'casing'}
+                                    label="Type"
+                                    onChange={(e) => setNewCasing({ ...newCasing, type: e.target.value as 'casing' | 'liner' })}
+                                >
+                                    <MenuItem value="casing">Casing</MenuItem>
+                                    <MenuItem value="liner">Liner</MenuItem>
+                                </Select>
+                            </FormControl>
                             <TextField
                                 size="small"
                                 label="Depth (m)"
@@ -419,19 +456,10 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
                             />
                             <TextField
                                 size="small"
-                                label="MD (m)"
-                                type="number"
-                                value={newCasing.mMD}
-                                onChange={(e) => setNewCasing({ ...newCasing, mMD: parseFloat(e.target.value) || 0 })}
-                                sx={{ width: 100 }}
-                            />
-                            <TextField
-                                size="small"
-                                label="TVD (m)"
-                                type="number"
-                                value={newCasing.mTVD}
-                                onChange={(e) => setNewCasing({ ...newCasing, mTVD: parseFloat(e.target.value) || 0 })}
-                                sx={{ width: 100 }}
+                                label="Description"
+                                value={newCasing.description}
+                                onChange={(e) => setNewCasing({ ...newCasing, description: e.target.value })}
+                                sx={{ width: 120 }}
                             />
                             <IconButton size="small" onClick={handleAddCasing} color="primary">
                                 <Add fontSize="small" />
