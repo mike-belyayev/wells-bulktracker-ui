@@ -1,15 +1,15 @@
 // src/pages/EquipmentPage.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AppBar, Toolbar, IconButton, Typography, Box, Button, Snackbar, Alert } from '@mui/material';
 import { Settings, Dashboard, Refresh, ExitToApp } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Dashboard';
+import { WellInformation, MudPitFluidData, BOPSystems } from '../components/Dashboard';
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
 import wellApiService from '../services/wellApi';
-import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
 import type { CasingProfile } from '../components/Dashboard/WellInformation';
+import type { BopSystem, MudPumpLiner } from '../components/Dashboard/BOPSystems';
 import type { PitData } from '../components/Dashboard/MudPitFluidData';
 
 const EquipmentPage = () => {
@@ -23,6 +23,12 @@ const EquipmentPage = () => {
     const [vessels, setVessels] = useState<SupplyVessel[]>([]);
     const [lastUpdated, setLastUpdated] = useState<string>('');
     
+    // Auto-refresh state
+    const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+    const [countdown, setCountdown] = useState(600);
+    const intervalRef = useRef<number | null>(null);
+    const countdownRef = useRef<number | null>(null);
+    
     const [wellData, setWellData] = useState<{
         wellName?: string;
         waterDepth?: number;
@@ -33,27 +39,8 @@ const EquipmentPage = () => {
     const [fluidData, setFluidData] = useState<PitData[]>([]);
     
     // BOP Systems and Mud Pump Liners data
-    const [bopSystemsData, setBopSystemsData] = useState<BopSystem[]>([
-        { id: '1', system: 'BOP Pressure Test', testDate: '10-JAN-2025', nextDate: '10-FEB-2025' },
-        { id: '2', system: 'BSR Pressure Test', testDate: '12-JAN-2025', nextDate: '12-FEB-2025' },
-        { id: '3', system: 'BOP Function Test', testDate: '08-JAN-2025', nextDate: '08-FEB-2025' },
-        { id: '4', system: 'Choke Manifold', testDate: '05-JAN-2025', nextDate: '05-FEB-2025' },
-        { id: '5', system: 'Standpipe Manifold', testDate: '15-JAN-2025', nextDate: '15-FEB-2025' },
-        { id: '6', system: 'Cement Manifold', testDate: '09-JAN-2025', nextDate: '09-FEB-2025' },
-        { id: '7', system: 'TIW Grey Valves', testDate: '11-JAN-2025', nextDate: '11-FEB-2025' },
-        { id: '8', system: 'I-BOPs', testDate: '07-JAN-2025', nextDate: '07-FEB-2025' },
-        { id: '9', system: 'Diverter Function', testDate: '13-JAN-2025', nextDate: '13-FEB-2025' },
-        { id: '10', system: 'CSR Function', testDate: '14-JAN-2025', nextDate: '14-FEB-2025' },
-        { id: '11', system: 'BSR Function', testDate: '16-JAN-2025', nextDate: '16-FEB-2025' },
-        { id: '12', system: 'WH Glycol Injection', testDate: '17-JAN-2025', nextDate: '17-FEB-2025' }
-    ]);
-    
-    const [mudPumpLinersData, setMudPumpLinersData] = useState<MudPumpLiner[]>([
-        { id: '1', pump: 1, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
-        { id: '2', pump: 2, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
-        { id: '3', pump: 3, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 },
-        { id: '4', pump: 4, liner: "6''", galPerStk: 5.34, bblPerStk: 0.1272 }
-    ]);
+    const [bopSystemsData, setBopSystemsData] = useState<BopSystem[]>([]);
+    const [mudPumpLinersData, setMudPumpLinersData] = useState<MudPumpLiner[]>([]);
     
     const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
         open: false,
@@ -77,8 +64,44 @@ const EquipmentPage = () => {
         });
     };
 
+    // Format countdown time
+    const formatCountdown = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const handleCasingUpdate = async (casingProfiles: CasingProfile[]) => {
+    if (currentWellId) {
+        try {
+            await wellApi.updateCasingProfile(currentWellId, casingProfiles);
+            // Update local state
+            setWellData(prev => ({ ...prev, casingProfiles }));
+            updateLastUpdated();
+            showSnackbar('Casing profiles updated', 'success');
+        } catch (err) {
+            console.error('Failed to update casing profiles:', err);
+            showSnackbar('Failed to update casing profiles', 'error');
+        }
+    }
+};
+    // Add this function to EquipmentPage.tsx
+const handleWellInfoUpdate = async (updates: any) => {
+    if (currentWellId) {
+        try {
+            await wellApi.patchWell(currentWellId, updates);
+            // Refresh the well data to show updated values
+            await loadWellData(currentWellId, false);
+            updateLastUpdated();
+            showSnackbar('Well information updated', 'success');
+        } catch (err) {
+            console.error('Failed to update well info:', err);
+            showSnackbar('Failed to update well information', 'error');
+        }
+    }
+};
     // Load well data from API
-    const loadWellData = async (wellId: string) => {
+    const loadWellData = async (wellId: string, showNotification: boolean = false) => {
         try {
             setLoading(true);
             const well = await wellApi.getWell(wellId);
@@ -95,20 +118,26 @@ const EquipmentPage = () => {
                 airGap: well.airGap ? Number(well.airGap) : undefined,
                 casingProfiles: well.casingProfile
             });
-
-            // Load mud pits from API in loadWellData function:
+            
+            // Load Mud Pits
             if (well.mudPits && Array.isArray(well.mudPits)) {
                 setFluidData(well.mudPits);
+            } else {
+                setFluidData([]);
             }
             
             // Load BOP Systems
             if (well.bopSystems && Array.isArray(well.bopSystems)) {
                 setBopSystemsData(well.bopSystems);
+            } else {
+                setBopSystemsData([]);
             }
             
             // Load Mud Pump Liners
             if (well.mudPumpLiners && Array.isArray(well.mudPumpLiners)) {
                 setMudPumpLinersData(well.mudPumpLiners);
+            } else {
+                setMudPumpLinersData([]);
             }
             
             // Load supply vessels
@@ -127,29 +156,76 @@ const EquipmentPage = () => {
                     ...vessel.additionalFields
                 }));
                 setVessels(formattedVessels);
+            } else {
+                setVessels([]);
+            }
+            
+            if (showNotification) {
+                showSnackbar('Data refreshed from server', 'success');
             }
             
             console.log('Well data loaded:', well.wellName);
         } catch (err) {
             console.error('Failed to load well data:', err);
-            showSnackbar('Failed to load well data', 'error');
+            if (showNotification) {
+                showSnackbar('Failed to refresh data', 'error');
+            }
         } finally {
             setLoading(false);
         }
     };
 
-    // Update last updated after any save operation
-    const updateLastUpdated = () => {
-        setLastUpdated(formatLastUpdated(new Date().toISOString()));
+    // Start auto-refresh timer
+    const startAutoRefresh = () => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        
+        setCountdown(600);
+        
+        intervalRef.current = window.setInterval(() => {
+            if (currentWellId && autoRefreshEnabled) {
+                loadWellData(currentWellId, true);
+                setCountdown(600);
+            }
+        }, 600000);
+        
+        countdownRef.current = window.setInterval(() => {
+            setCountdown(prev => prev <= 1 ? 600 : prev - 1);
+        }, 1000);
+    };
+
+    // Stop auto-refresh
+    const stopAutoRefresh = () => {
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        if (countdownRef.current) {
+            clearInterval(countdownRef.current);
+            countdownRef.current = null;
+        }
+    };
+
+    // Toggle auto-refresh
+    const toggleAutoRefresh = () => {
+        setAutoRefreshEnabled(!autoRefreshEnabled);
+        if (!autoRefreshEnabled) {
+            startAutoRefresh();
+            showSnackbar('Auto-refresh enabled (every 10 minutes)', 'success');
+        } else {
+            stopAutoRefresh();
+            showSnackbar('Auto-refresh disabled', 'success');
+        }
     };
 
     // Get well ID based on user's rig
     useEffect(() => {
         const fetchWellId = async () => {
             try {
+                setLoading(true);
                 const wells = await wellApi.getWellsByOwner(userRig);
                 if (wells && wells.length > 0) {
-                    loadWellData(wells[0]._id);
+                    await loadWellData(wells[0]._id);
                 } else {
                     console.log('No wells found for owner:', userRig);
                     setLoading(false);
@@ -163,6 +239,26 @@ const EquipmentPage = () => {
         fetchWellId();
     }, [userRig]);
 
+    // Start auto-refresh when well is loaded
+    useEffect(() => {
+        if (currentWellId && autoRefreshEnabled) {
+            startAutoRefresh();
+        }
+        
+        return () => {
+            stopAutoRefresh();
+        };
+    }, [currentWellId]);
+
+    // Update auto-refresh when enabled state changes
+    useEffect(() => {
+        if (currentWellId && autoRefreshEnabled) {
+            startAutoRefresh();
+        } else if (!autoRefreshEnabled) {
+            stopAutoRefresh();
+        }
+    }, [autoRefreshEnabled]);
+
     const showSnackbar = (message: string, severity: 'success' | 'error') => {
         setSnackbar({ open: true, message, severity });
     };
@@ -171,27 +267,20 @@ const EquipmentPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
         if (currentWellId) {
-            loadWellData(currentWellId);
-            showSnackbar('Dashboard refreshed', 'success');
+            setLoading(true);
+            await loadWellData(currentWellId, true);
+            setCountdown(600);
+            setLoading(false);
         }
     };
 
-    // Add handler for mud pit updates:
-const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
-    if (currentWellId) {
-        try {
-            await wellApi.patchWell(currentWellId, { mudPits: updatedPits });
-            setFluidData(updatedPits);
-            updateLastUpdated();
-            showSnackbar('Mud pits updated', 'success');
-        } catch (err) {
-            console.error('Failed to update mud pits:', err);
-            showSnackbar('Failed to update mud pits', 'error');
-        }
-    }
-};
+    // Update last updated after any save operation
+    const updateLastUpdated = () => {
+        setLastUpdated(formatLastUpdated(new Date().toISOString()));
+        setCountdown(600);
+    };
 
     // BOP Systems handlers
     const handleBopUpdate = async (bopSystems: BopSystem[]) => {
@@ -223,6 +312,21 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
         }
     };
 
+    // Mud Pits handler
+    const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
+        if (currentWellId) {
+            try {
+                await wellApi.patchWell(currentWellId, { mudPits: updatedPits });
+                setFluidData(updatedPits);
+                updateLastUpdated();
+                showSnackbar('Mud pits updated', 'success');
+            } catch (err) {
+                console.error('Failed to update mud pits:', err);
+                showSnackbar('Failed to update mud pits', 'error');
+            }
+        }
+    };
+
     // Supply Vessel CRUD operations with API
     const handleVesselsChange = async (newVessels: SupplyVessel[]) => {
         const isAddOperation = newVessels.length > vessels.length;
@@ -245,7 +349,7 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
                     };
                     await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
                     showSnackbar('Vessel added successfully', 'success');
-                    await loadWellData(currentWellId);
+                    await loadWellData(currentWellId, false);
                     updateLastUpdated();
                 } catch (err) {
                     console.error('Failed to add vessel:', err);
@@ -313,7 +417,7 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
         }
     };
 
-    if (loading && !vessels.length) {
+    if (loading && !vessels.length && !fluidData.length) {
         return (
             <div className="equipment-container">
                 <div className="loading-container">Loading dashboard...</div>
@@ -337,12 +441,22 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
                             startIcon={<Refresh />}
                             onClick={handleRefresh}
                             className="refresh-btn"
+                            disabled={loading}
                         >
                             Refresh
                         </Button>
+                        
+                        <Button
+                            variant={autoRefreshEnabled ? "contained" : "outlined"}
+                            size="small"
+                            onClick={toggleAutoRefresh}
+                            className={`auto-refresh-btn ${autoRefreshEnabled ? 'active' : ''}`}
+                            title={autoRefreshEnabled ? `Auto-refresh in ${formatCountdown(countdown)}` : "Enable auto-refresh (every 10 minutes)"}
+                        >
+                            {autoRefreshEnabled ? `Auto: ${formatCountdown(countdown)}` : "Auto Off"}
+                        </Button>
                     </Box>
 
-                    {/* Last Updated in the middle */}
                     <Box className="header-center">
                         {lastUpdated && (
                             <Typography variant="body2" className="last-updated-text">
@@ -378,11 +492,17 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
             </AppBar>
 
             <div className="main-content">
-                {/* TOP SECTION - 3 columns */}
                 <div className="top-section">
                     <div className="three-column-layout">
                         <div className="column col-well">
-                            <WellInformation wellData={wellData} />
+
+<WellInformation 
+    wellData={wellData}
+    wellId={currentWellId || undefined}
+    onUpdate={handleWellInfoUpdate}
+    onCasingUpdate={handleCasingUpdate}
+    readOnly={!isAdmin}
+/>
                         </div>
                         <div className="column col-mud">
                             <MudPitFluidData 
@@ -393,7 +513,7 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
                             />
                         </div>
                         <div className="column col-tables">
-                            <LastUpdated 
+                            <BOPSystems 
                                 wellId={currentWellId || undefined}
                                 bopSystemsData={bopSystemsData}
                                 mudPumpLinersData={mudPumpLinersData}
@@ -405,7 +525,6 @@ const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
                     </div>
                 </div>
 
-                {/* BOTTOM SECTION - Supply Vessels */}
                 <div className="bottom-section">
                     <SupplyVesselsTable 
                         vessels={vessels}

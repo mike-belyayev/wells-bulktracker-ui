@@ -25,14 +25,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 48px !important;
-    padding: 0 16px !important;
+    min-height: 40px !important;
+    padding: 0 12px !important;
 }
 
 .header-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex: 1;
 }
 
@@ -42,7 +42,7 @@
 
 .header-title {
     font-weight: bold !important;
-    font-size: 1.1rem !important;
+    font-size: 1rem !important;
     white-space: nowrap;
     color: white !important;
 }
@@ -51,13 +51,9 @@
     background-color: #2196f3 !important;
     color: white !important;
     text-transform: none !important;
-    font-size: 0.8rem !important;
-    padding: 4px 12px !important;
+    font-size: 0.7rem !important;
+    padding: 2px 8px !important;
     white-space: nowrap;
-}
-
-.refresh-btn:hover {
-    background-color: #1976d2 !important;
 }
 
 .admin-btn {
@@ -73,7 +69,7 @@
 }
 
 .last-updated-text {
-    font-size: 0.7rem !important;
+    font-size: 0.65rem !important;
     color: rgba(255, 255, 255, 0.8) !important;
     font-family: monospace !important;
     letter-spacing: 0.5px;
@@ -82,7 +78,7 @@
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex: 1;
     justify-content: flex-end;
 }
@@ -92,34 +88,30 @@
     flex-direction: column;
     line-height: 1.2;
     text-align: left;
-    margin-right: 8px;
+    margin-right: 6px;
 }
 
 .dev-credit .MuiTypography-caption {
     color: rgba(76, 175, 80, 0.8) !important;
-    font-size: 0.7rem !important;
+    font-size: 0.6rem !important;
 }
 
 .dev-email {
     color: #4caf50 !important;
-    font-size: 0.7rem !important;
+    font-size: 0.6rem !important;
 }
 
 .user-name {
     color: white !important;
-    font-size: 0.85rem !important;
-    max-width: 200px;
+    font-size: 0.75rem !important;
+    max-width: 180px;
 }
 
 .logout-btn {
     color: white !important;
     text-transform: none !important;
-    font-size: 0.8rem !important;
-    padding: 4px 8px !important;
-}
-
-.logout-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
+    font-size: 0.7rem !important;
+    padding: 2px 6px !important;
 }
 
 /* Main Content - Dynamic vertical split */
@@ -128,8 +120,8 @@
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-    padding: 12px 16px;
-    gap: 12px;
+    padding: 8px 12px;
+    gap: 8px;
     min-height: 0;
 }
 
@@ -150,29 +142,29 @@
 .three-column-layout {
     display: flex !important;
     flex-direction: row !important;
-    gap: 12px;
+    gap: 8px;
     height: 100%;
     width: 100%;
     min-width: 0;
 }
 
-/* Column widths: First and Last 20%, Middle 60% */
+/* Column widths */
 .col-well {
     flex: 0 0 20%;
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .col-mud {
-    flex: 0 0 60%;
+    flex: 0 0 55%;
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .col-tables {
-    flex: 0 0 20%;
+    flex: 0 0 25%;
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 
 /* Ensure all content respects column boundaries */
@@ -202,16 +194,53 @@
     color: #666;
 }
 
+/* Add to EquipmentPage.css - Auto-refresh button styles */
+
+.auto-refresh-btn {
+    text-transform: none !important;
+    font-size: 0.7rem !important;
+    padding: 4px 8px !important;
+    white-space: nowrap;
+    background-color: transparent !important;
+    border-color: #ff9800 !important;
+    color: #ff9800 !important;
+}
+
+.auto-refresh-btn.active {
+    background-color: #ff9800 !important;
+    color: white !important;
+}
+
+.auto-refresh-btn.active:hover {
+    background-color: #f57c00 !important;
+}
+
+.auto-refresh-btn:hover {
+    background-color: rgba(255, 152, 0, 0.1) !important;
+}
+
 /* Responsive */
+@media (max-width: 1400px) {
+    .col-well {
+        flex: 0 0 22%;
+    }
+    .col-mud {
+        flex: 0 0 52%;
+    }
+    .col-tables {
+        flex: 0 0 26%;
+    }
+}
+
 @media (max-width: 1200px) {
     .three-column-layout {
         flex-wrap: wrap;
-        gap: 12px;
+        gap: 8px;
     }
     
     .col-well, .col-mud, .col-tables {
         flex: auto;
-        min-width: 280px;
+        min-width: 250px;
     }
     
     .top-section {
@@ -221,8 +250,8 @@
 
 @media (max-width: 768px) {
     .main-content {
-        padding: 8px;
-        gap: 8px;
+        padding: 6px;
+        gap: 6px;
     }
     
     .dev-credit {
@@ -234,7 +263,7 @@
     }
     
     .three-column-layout {
-        gap: 8px;
+        gap: 6px;
     }
 }
 
