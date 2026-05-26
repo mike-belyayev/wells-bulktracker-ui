@@ -1,6 +1,6 @@
 // src/components/Dashboard/WellInformation.tsx
 import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import { Edit, Save, Cancel, Add, Delete } from '@mui/icons-material';
 import { useEffect, useRef, useState } from 'react';
 import './WellInformation.css';
 
@@ -192,8 +192,6 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, readOnly 
     const labelPadding = Math.max(2, 4 * scale);
     const horizontalSpacing = Math.max(12, 16 * scale);
     const startLeft = Math.max(5, 8 * scale);
-
-    const maxDepth = Math.max(...casingProfiles.map(p => p.depth));
 
     return (
         <Paper className="info-panel" elevation={3}>
