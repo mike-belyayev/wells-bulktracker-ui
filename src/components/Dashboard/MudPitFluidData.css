@@ -34,125 +34,77 @@
 .fluid-content {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: 2px;
     background: #f8f9fa;
 }
 
-/* 5 column grid - FORCED 5 COLUMNS */
-.pit-group-grid {
+/* 6 column continuous grid - minimal gap */
+.continuous-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-}
-
-/* Ensure 5 columns at all screen sizes until breakpoint */
-@media (max-width: 1600px) {
-    .pit-group-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 1400px) {
-    .pit-group-grid {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 1200px) {
-    .pit-group-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 900px) {
-    .pit-group-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 600px) {
-    .pit-group-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 400px) {
-    .pit-group-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.pit-group-container {
-    position: relative;
-    margin-bottom: 20px;
-    border: 1px solid #e0e0e0;
-    padding: 14px 8px 8px 8px;
-    background: white;
-}
-
-.pit-group-label-corner {
-    position: absolute;
-    top: -10px;
-    left: 8px;
-    background: white;
-    padding: 0 8px;
-    border: 1px solid #e0e0e0;
-    border-radius: 3px;
-}
-
-.pit-group-label-text {
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #2c3e50;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    align-items: start;
 }
 
 .pit-card {
-    background: white;
     border-radius: 4px;
     overflow: hidden;
-    border: 1px solid #eee;
+    border: 1px solid;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+/* Remove any background from children that might override */
+.pit-card .pit-details {
+    background: transparent !important;
 }
 
 .pit-header {
-    padding: 4px 6px;
-    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+    padding: 1px 8px;
+    background: rgba(0,0,0,0.04);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
 }
 
 .pit-name {
     font-weight: 800;
-    font-size: 0.6rem;
-    color: white;
+    font-size: 0.65rem;
+    color: #1a1a2e;
+    letter-spacing: 0.3px;
 }
 
 .pit-edit-btn {
-    padding: 2px;
-    color: rgba(255,255,255,0.7);
+    padding: 2px !important;
+    color: #666 !important;
+}
+
+.pit-edit-btn:hover {
+    color: #333 !important;
+    background: rgba(0,0,0,0.1) !important;
 }
 
 .pit-details {
-    padding: 6px;
-    background: white;
+    padding: 4px 8px;
 }
 
+/* Edit mode - needs white background for readability */
 .pit-details.editing {
-    background: #fafafa;
+    background: rgba(255,255,255,0.95) !important;
 }
 
 .edit-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 }
 
 .edit-label {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     font-weight: 700;
     color: #666;
     width: 40px;
@@ -160,24 +112,59 @@
 
 .edit-input {
     flex: 1;
-    font-size: 0.55rem;
+    font-size: 0.5rem;
     padding: 4px 6px;
     border: 1px solid #ddd;
     border-radius: 3px;
 }
 
+.edit-select {
+    flex: 1;
+    font-size: 0.5rem;
+    padding: 4px 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: white;
+}
+
+/* Value rows - horizontal layout with small grey labels and bold black values */
 .value-row {
     display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+.value-row:last-child {
+    margin-bottom: 0;
 }
 
 .value-label {
-    font-size: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #666;
+}
+
+.value-text {
+    font-size: 0.85rem;
     font-weight: 700;
-    color: #95a5a6;
-    flex: 1;
+    color: #1a1a2e;
+    text-align: right;
+    font-family: 'Courier New', monospace;
+}
+
+/* Edit mode styles */
+.pit-details.editing .value-row {
+    gap: 6px;
+}
+
+.pit-details.editing .value-label {
+    width: 50px;
+    flex-shrink: 0;
+}
+
+.pit-details.editing .value-text {
+    display: none;
 }
 
 .value-input {
@@ -185,29 +172,22 @@
     padding: 3px 4px;
     border: 1px solid #ddd;
     border-radius: 2px;
-    width: 65px;
+    width: 70px;
     text-align: right;
-}
-
-.value-text {
-    font-size: 0.55rem;
-    font-weight: 700;
-    color: #2c3e50;
-    width: 65px;
-    text-align: right;
+    font-weight: 600;
 }
 
 .remove-value-btn {
-    padding: 2px;
-    color: #bbb;
+    padding: 2px !important;
+    color: #bbb !important;
 }
 
 .add-field-row {
     display: flex;
-    gap: 6px;
-    margin: 8px 0;
+    gap: 4px;
+    margin: 8px 0 4px;
     padding-top: 6px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(0,0,0,0.1);
 }
 
 .field-input {
@@ -238,11 +218,11 @@
     gap: 2px;
     margin-top: 8px;
     padding-top: 6px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(0,0,0,0.1);
 }
 
 .delete-btn {
-    color: #f44336;
+    color: #f44336 !important;
 }
 
 .empty-state {
@@ -256,3 +236,29 @@
 .fluid-content::-webkit-scrollbar { width: 4px; }
 .fluid-content::-webkit-scrollbar-track { background: #e0e0e0; }
 .fluid-content::-webkit-scrollbar-thumb { background: #888; }
+
+/* Responsive */
+@media (max-width: 1600px) {
+    .continuous-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-width: 1400px) {
+    .continuous-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+@media (max-width: 1100px) {
+    .continuous-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 800px) {
+    .continuous-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 500px) {
+    .continuous-grid { grid-template-columns: 1fr; }
+}
+
+.group-select-full {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}

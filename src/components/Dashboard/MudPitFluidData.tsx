@@ -24,6 +24,20 @@ export interface PitData {
     values: PitValue[];
 }
 
+// Group colors - just color names
+const GROUP_COLORS = [
+    { name: 'None', value: '', bg: '#ffffff', border: '#e0e0e0' },
+    { name: 'Light Yellow', value: 'yellow', bg: '#FFF9C4', border: '#F9A825' },
+    { name: 'Light Blue', value: 'blue', bg: '#BBDEFB', border: '#1976D2' },
+    { name: 'Light Green', value: 'green', bg: '#C8E6C9', border: '#388E3C' },
+    { name: 'Light Purple', value: 'purple', bg: '#D1C4E9', border: '#5E35B1' },
+    { name: 'Light Orange', value: 'orange', bg: '#FFCCBC', border: '#F4511E' },
+    { name: 'Light Pink', value: 'pink', bg: '#F8BBD0', border: '#D81B60' },
+    { name: 'Light Brown', value: 'brown', bg: '#D7CCC8', border: '#795548' },
+    { name: 'Light Cyan', value: 'cyan', bg: '#B2EBF2', border: '#00838F' },
+    { name: 'Light Lime', value: 'lime', bg: '#F0F4C3', border: '#827717' },
+];
+
 const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
     const [pits, setPits] = useState<PitData[]>([]);
     const [loading, setLoading] = useState(true);
@@ -52,23 +66,10 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
         }
     }, [fluidData]);
 
-    const getGroupedPits = () => {
-        const groups: { [key: string]: PitData[] } = {};
-        const ungrouped: PitData[] = [];
-        
-        pits.forEach(pit => {
-            if (pit.pitGroup && pit.pitGroup.trim() !== '') {
-                const groupName = pit.pitGroup;
-                if (!groups[groupName]) {
-                    groups[groupName] = [];
-                }
-                groups[groupName].push(pit);
-            } else {
-                ungrouped.push(pit);
-            }
-        });
-        
-        return { groups, ungrouped };
+    const getColorForGroup = (groupName?: string): { bg: string; border: string } => {
+        if (!groupName) return { bg: '#ffffff', border: '#e0e0e0' };
+        const color = GROUP_COLORS.find(c => c.value === groupName);
+        return color ? { bg: color.bg, border: color.border } : { bg: '#ffffff', border: '#e0e0e0' };
     };
 
     const handleEdit = (index: number) => {
@@ -107,11 +108,11 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
         }
     };
 
-    const handleGroupChange = (newGroup: string) => {
+    const handleGroupChange = (groupValue: string) => {
         if (editingData) {
             setEditingData({
                 ...editingData,
-                pitGroup: newGroup.trim() === '' ? undefined : newGroup
+                pitGroup: groupValue === '' ? undefined : groupValue
             });
         }
     };
@@ -204,7 +205,7 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
         if (newPitName.trim() && onUpdate) {
             const newPit: PitData = {
                 pitName: newPitName.trim(),
-                pitGroup: newPitGroup.trim() === '' ? undefined : newPitGroup.trim(),
+                pitGroup: newPitGroup === '' ? undefined : newPitGroup,
                 order: pits.length,
                 values: newPitValues.filter(v => v.valueName.trim() && v.valueName !== '')
             };
@@ -253,14 +254,12 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
         );
     }
 
-    const { groups, ungrouped } = getGroupedPits();
-    const allGroups = Object.keys(groups).sort();
-
-    const renderPitCard = (pit: PitData, index: number, isInGroup: boolean = false) => {
+    const renderPitCard = (pit: PitData, index: number) => {
         const isEditing = editingIndex === index;
+        const colors = getColorForGroup(pit.pitGroup);
         
         return (
-            <div key={`pit_${pit.pitName}_${index}`} className={`pit-card ${isInGroup ? 'grouped-pit' : ''}`}>
+            <div key={`pit_${index}_${pit.pitName}`} className="pit-card" style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
                 <div className="pit-header">
                     <Typography className="pit-name">{pit.pitName}</Typography>
                     {!readOnly && !isEditing && (
@@ -272,19 +271,22 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
                 
                 {isEditing && editingData ? (
                     <div className="pit-details editing">
-                        {/* Name Edit */}
                         <div className="edit-row">
                             <Typography className="edit-label">Name:</Typography>
                             <input type="text" value={editingData.pitName} onChange={(e) => handleNameChange(e.target.value)} className="edit-input" />
                         </div>
                         
-                        {/* Group Edit */}
                         <div className="edit-row">
-                            <Typography className="edit-label">Group:</Typography>
-                            <input type="text" value={editingData.pitGroup || ''} onChange={(e) => handleGroupChange(e.target.value)} className="edit-input" placeholder="No group" />
+                            <Typography className="edit-label">Color:</Typography>
+                            <select value={editingData.pitGroup || ''} onChange={(e) => handleGroupChange(e.target.value)} className="edit-select">
+                                {GROUP_COLORS.map(color => (
+                                    <option key={color.value} value={color.value}>
+                                        {color.name}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         
-                        {/* Values */}
                         {editingData.values.map((val, idx) => (
                             <div key={`val_${val.valueName}_${idx}`} className="value-row">
                                 <Typography className="value-label">{val.valueName}:</Typography>
@@ -295,13 +297,11 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
                             </div>
                         ))}
                         
-                        {/* Add Custom Field */}
                         <div className="add-field-row">
                             <input type="text" value={newValueName} onChange={(e) => setNewValueName(e.target.value)} placeholder="New field name..." className="field-input" onKeyPress={(e) => e.key === 'Enter' && handleAddCustomField()} />
                             <button onClick={handleAddCustomField} className="add-field-btn" disabled={!newValueName.trim()}>Add</button>
                         </div>
                         
-                        {/* Action Buttons */}
                         <div className="action-buttons">
                             <Tooltip title="Move Up"><IconButton size="small" onClick={() => movePitUp(index)} disabled={index === 0}><ArrowUpward fontSize="small" /></IconButton></Tooltip>
                             <Tooltip title="Move Down"><IconButton size="small" onClick={() => movePitDown(index)} disabled={index === pits.length - 1}><ArrowDownward fontSize="small" /></IconButton></Tooltip>
@@ -339,35 +339,9 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
                 {pits.length === 0 ? (
                     <div className="empty-state">No mud pits configured. Click the + button to add one.</div>
                 ) : (
-                    <>
-                        {allGroups.map(groupName => {
-                            const groupPits = groups[groupName];
-                            return (
-                                <div key={`group_${groupName}`} className="pit-group-container">
-                                    <div className="pit-group-label-corner">
-                                        <Typography className="pit-group-label-text">{groupName}</Typography>
-                                    </div>
-                                    <div className="pit-group-grid">
-                                        {groupPits.map(pit => {
-                                            const idx = pits.findIndex(p => p.pitName === pit.pitName && p.order === pit.order);
-                                            return renderPitCard(pit, idx, true);
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                        
-                        {ungrouped.length > 0 && (
-                            <div className="pit-group-container">
-                                <div className="pit-group-grid">
-                                    {ungrouped.map(pit => {
-                                        const idx = pits.findIndex(p => p.pitName === pit.pitName && p.order === pit.order);
-                                        return renderPitCard(pit, idx, false);
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </>
+                    <div className="continuous-grid">
+                        {pits.map((pit, idx) => renderPitCard(pit, idx))}
+                    </div>
                 )}
             </div>
 
@@ -376,7 +350,12 @@ const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudP
                 <DialogTitle>Add New Mud Pit</DialogTitle>
                 <DialogContent>
                     <TextField margin="dense" label="Pit Name" fullWidth value={newPitName} onChange={(e) => setNewPitName(e.target.value)} required />
-                    <TextField margin="dense" label="Group (optional)" fullWidth value={newPitGroup} onChange={(e) => setNewPitGroup(e.target.value)} placeholder="e.g., Active, Reserve, Chemical" />
+                    
+                    <select value={newPitGroup} onChange={(e) => setNewPitGroup(e.target.value)} className="group-select-full" style={{ marginTop: 16, width: '100%', padding: 12 }}>
+                        {GROUP_COLORS.map(color => (
+                            <option key={color.value} value={color.value}>{color.name}</option>
+                        ))}
+                    </select>
                     
                     <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>Values:</Typography>
                     {newPitValues.map((val, idx) => (
