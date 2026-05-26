@@ -1,179 +1,378 @@
-/* src/components/Dashboard/WellInformation.css */
+/* src/components/Dashboard/MudPitFluidData.css */
 
-.info-panel {
+.fluid-panel {
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background-color: white !important;
+    border-radius: 4px;
 }
 
 .panel-header {
-    padding: 8px 12px;
+    padding: 6px 12px;
     background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
     flex-shrink: 0;
-    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .panel-title {
     font-weight: 700 !important;
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
     color: white !important;
-    text-align: center;
     letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
-.panel-content {
+.add-pit-btn {
+    color: white !important;
+    background: rgba(255,255,255,0.1) !important;
+    padding: 4px !important;
+}
+
+.fluid-content {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    overflow-x: hidden;
+    padding: 8px;
+    background: #f8f9fa;
 }
 
-/* Well Metadata */
-.well-metadata {
-    margin-bottom: 10px;
+/* 5 column grid */
+.pit-group-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
 }
 
-.metadata-row {
+/* Group container */
+.pit-group-container {
+    position: relative;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    padding: 14px 8px 8px 8px;
+    background: white;
+}
+
+.pit-group-label-corner {
+    position: absolute;
+    top: -10px;
+    left: 8px;
+    background: white;
+    padding: 0 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+}
+
+.pit-group-label-text {
+    font-size: 0.6rem !important;
+    font-weight: 700 !important;
+    color: #2c3e50;
+    text-transform: uppercase;
+}
+
+/* Pit card */
+.pit-card {
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    position: relative;
+    border: 1px solid #eee;
+}
+
+.pit-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.grouped-pit {
+    border-left: 2px solid #2c3e50;
+}
+
+.pit-header {
+    padding: 4px 6px;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 3px 0;
 }
 
-.metadata-label {
-    font-weight: 600 !important;
-    font-size: 0.7rem !important;
-    color: #666;
-}
-
-.metadata-value {
-    font-weight: 500 !important;
-    font-size: 0.7rem !important;
-    color: #1976d2;
-    font-family: monospace;
-}
-
-.section-divider {
-    margin: 8px 0 !important;
-}
-
-/* Casing Diagram */
-.casing-diagram-container {
-    margin-top: 6px;
-}
-
-.diagram-title {
-    font-weight: 600 !important;
-    font-size: 0.7rem !important;
-    color: #333;
-    margin-bottom: 10px !important;
-    text-align: center;
-}
-
-.diagram-wrapper {
-    position: relative;
-    min-height: 350px;
-    padding: 10px;
-}
-
-.diagram-area {
-    position: relative;
-    width: 100%;
-    min-height: 320px;
-    overflow: visible;
-}
-
-/* Casing Strings */
-.casing-string {
-    position: absolute;
+.pit-header-left {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    top: 0;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    z-index: 5;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
 }
 
-.casing-line {
-    width: 2px;
-    height: 100%;
-    background: #000000;
-    position: relative;
+.pit-header-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
 
-/* Flag tip */
-.casing-tip-flag {
-    position: absolute;
-    bottom: -2px;
-    left: -1px;
-    width: 0;
-    height: 0;
-    border-left: 10px solid #000000;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
-}
-
-/* Label */
-.casing-label {
-    position: absolute;
-    bottom: -4px;
-    left: 12px;
-    white-space: nowrap;
-    background: rgba(255, 255, 255, 0.95);
-    padding: 2px 5px;
-    border-radius: 3px;
-    border-left: 2px solid #000000;
-    font-size: 0.6rem;
-    pointer-events: none;
-    z-index: 15;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.casing-size {
-    font-weight: 700 !important;
+.pit-name {
+    font-weight: 800 !important;
     font-size: 0.6rem !important;
-    color: #000000;
-    display: block;
+    color: white !important;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
 }
 
-.casing-depth {
+.pit-edit-btn {
+    padding: 2px !important;
+    color: rgba(255,255,255,0.7) !important;
+}
+
+.pit-edit-btn:hover {
+    color: white !important;
+    background: rgba(255,255,255,0.1) !important;
+}
+
+/* Edit mode styles */
+.pit-details.editing {
+    padding: 8px;
+    background: #fafafa;
+}
+
+.pit-name-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.pit-name-input {
+    flex: 1;
+    font-size: 0.55rem;
+    font-weight: 600;
+    padding: 3px 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: white;
+}
+
+.pit-name-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.pit-group-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.group-edit-input {
+    flex: 1;
+    font-size: 0.55rem;
+    padding: 3px 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    background: white;
+}
+
+.group-edit-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.pit-details {
+    padding: 6px;
+    background: white;
+}
+
+.pit-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.pit-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.pit-label {
     font-size: 0.5rem !important;
-    color: #666;
-    display: block;
+    font-weight: 700 !important;
+    color: #95a5a6;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-/* Scrollbar */
-.panel-content::-webkit-scrollbar {
-    width: 4px;
+.pit-value {
+    font-size: 0.55rem !important;
+    font-weight: 700 !important;
+    font-family: 'Courier New', monospace;
+    color: #2c3e50;
 }
 
-.panel-content::-webkit-scrollbar-track {
-    background: #f1f1f1;
+.pit-edit-input {
+    font-size: 0.55rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    color: #2c3e50;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    padding: 2px 4px;
+    width: 65px;
+    text-align: right;
+}
+
+.pit-edit-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.remove-value-btn {
+    padding: 2px !important;
+    color: #bbb !important;
+}
+
+.remove-value-btn:hover {
+    color: #f44336 !important;
+}
+
+.add-value-section {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.value-select {
+    flex: 1;
+    font-size: 0.5rem;
+    padding: 3px 4px;
+    border: 1px solid #ddd;
+    border-radius: 2px;
+    background: white;
+}
+
+.custom-field-input {
+    flex: 1;
+    font-size: 0.5rem;
+    padding: 3px 4px;
+    border: 1px solid #ddd;
     border-radius: 2px;
 }
 
-.panel-content::-webkit-scrollbar-thumb {
+.add-value-btn {
+    font-size: 0.5rem;
+    padding: 3px 8px;
+    background: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.add-value-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Action buttons in edit mode */
+.pit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.pit-move-btn {
+    padding: 2px !important;
+    color: #666 !important;
+}
+
+.pit-move-btn:hover {
+    color: #2196f3 !important;
+    background: #e3f2fd !important;
+}
+
+.pit-move-btn.Mui-disabled {
+    color: #ccc !important;
+}
+
+.pit-delete-btn {
+    padding: 2px !important;
+    color: #f44336 !important;
+}
+
+.pit-delete-btn:hover {
+    background: #ffebee !important;
+}
+
+.pit-actions .MuiIconButton-root {
+    padding: 4px;
+}
+
+/* Scrollbar */
+.fluid-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.fluid-content::-webkit-scrollbar-track {
+    background: #e0e0e0;
+    border-radius: 2px;
+}
+
+.fluid-content::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 2px;
 }
 
-@media (max-width: 768px) {
-    .diagram-wrapper {
-        min-height: 280px;
+/* Responsive */
+@media (max-width: 1600px) {
+    .pit-group-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
-    
-    .casing-label {
-        left: 10px;
-        padding: 1px 4px;
+}
+
+@media (max-width: 1400px) {
+    .pit-group-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
-    
-    .casing-size {
-        font-size: 0.55rem !important;
+}
+
+@media (max-width: 1200px) {
+    .pit-group-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
-    
-    .casing-depth {
-        font-size: 0.45rem !important;
+}
+
+@media (max-width: 900px) {
+    .pit-group-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .pit-group-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 2560px) {
+    .pit-group-grid {
+        grid-template-columns: repeat(6, 1fr);
     }
 }

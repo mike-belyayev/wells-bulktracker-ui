@@ -8,10 +8,9 @@ import { WellInformation, MudPitFluidData, LastUpdated } from '../components/Das
 import { SupplyVesselsTable, type SupplyVessel } from '../components/SupplyVessels';
 import './EquipmentPage.css';
 import wellApiService from '../services/wellApi';
-// Import types from LastUpdated
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/LastUpdated';
-// Import CasingProfile type from WellInformation
 import type { CasingProfile } from '../components/Dashboard/WellInformation';
+import type { PitData } from '../components/Dashboard/MudPitFluidData';
 
 const EquipmentPage = () => {
     const { logout, user } = useAuth();
@@ -31,7 +30,7 @@ const EquipmentPage = () => {
         casingProfiles?: CasingProfile[];
     } | undefined>(undefined);
     
-    const [fluidData] = useState<any>(undefined);
+    const [fluidData, setFluidData] = useState<PitData[]>([]);
     
     // BOP Systems and Mud Pump Liners data
     const [bopSystemsData, setBopSystemsData] = useState<BopSystem[]>([
@@ -96,6 +95,11 @@ const EquipmentPage = () => {
                 airGap: well.airGap ? Number(well.airGap) : undefined,
                 casingProfiles: well.casingProfile
             });
+
+            // Load mud pits from API in loadWellData function:
+            if (well.mudPits && Array.isArray(well.mudPits)) {
+                setFluidData(well.mudPits);
+            }
             
             // Load BOP Systems
             if (well.bopSystems && Array.isArray(well.bopSystems)) {
@@ -173,6 +177,21 @@ const EquipmentPage = () => {
             showSnackbar('Dashboard refreshed', 'success');
         }
     };
+
+    // Add handler for mud pit updates:
+const handleMudPitsUpdate = async (updatedPits: PitData[]) => {
+    if (currentWellId) {
+        try {
+            await wellApi.patchWell(currentWellId, { mudPits: updatedPits });
+            setFluidData(updatedPits);
+            updateLastUpdated();
+            showSnackbar('Mud pits updated', 'success');
+        } catch (err) {
+            console.error('Failed to update mud pits:', err);
+            showSnackbar('Failed to update mud pits', 'error');
+        }
+    }
+};
 
     // BOP Systems handlers
     const handleBopUpdate = async (bopSystems: BopSystem[]) => {
@@ -366,7 +385,12 @@ const EquipmentPage = () => {
                             <WellInformation wellData={wellData} />
                         </div>
                         <div className="column col-mud">
-                            <MudPitFluidData fluidData={fluidData} />
+                            <MudPitFluidData 
+                                fluidData={fluidData}
+                                wellId={currentWellId || undefined}
+                                onUpdate={handleMudPitsUpdate}
+                                readOnly={!isAdmin}
+                            />
                         </div>
                         <div className="column col-tables">
                             <LastUpdated 

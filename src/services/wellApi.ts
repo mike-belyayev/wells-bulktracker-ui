@@ -92,6 +92,13 @@ export const cargoVesselApi = {
 
 // Mud Pit API calls
 export const mudPitApi = {
+    // Get all mud pits for a well
+    getMudPits: async (wellId: string) => {
+        const well = await wellApi.getWell(wellId);
+        return well.mudPits || [];
+    },
+
+    // Add a new mud pit
     addMudPit: async (wellId: string, mudPit: any) => {
         const url = `${API_BASE_URL}/api/wells/${wellId}/mud-pits`;
         return authFetch(url, {
@@ -100,6 +107,7 @@ export const mudPitApi = {
         });
     },
 
+    // Update a mud pit
     updateMudPit: async (wellId: string, pitIndex: number, mudPit: any) => {
         const url = `${API_BASE_URL}/api/wells/${wellId}/mud-pits/${pitIndex}`;
         return authFetch(url, {
@@ -108,11 +116,17 @@ export const mudPitApi = {
         });
     },
 
+    // Delete a mud pit
     deleteMudPit: async (wellId: string, pitIndex: number) => {
         const url = `${API_BASE_URL}/api/wells/${wellId}/mud-pits/${pitIndex}`;
         return authFetch(url, {
             method: 'DELETE'
         });
+    },
+
+    // Update all mud pits at once (for reordering)
+    updateAllMudPits: async (wellId: string, mudPits: any[]) => {
+        return wellApi.patchWell(wellId, { mudPits });
     }
 };
 
