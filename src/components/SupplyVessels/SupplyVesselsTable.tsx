@@ -131,7 +131,6 @@ const SupplyVesselsTable = ({
     onVesselsChange, 
     onCargoUpdate,      // Add onCargoUpdate prop
     onSave, 
-    onDelete, 
     readOnly = false 
 }: SupplyVesselsTableProps) => {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -330,7 +329,7 @@ const SupplyVesselsTable = ({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {vessels.map((vessel, idx) => (
+                        {vessels.map((vessel) => (
                             <TableRow key={vessel.id} hover>
                                 <TableCell className="table-body-cell">{vessel.vessel}</TableCell>
                                 <TableCell className="table-body-cell">{vessel.location || '—'}</TableCell>

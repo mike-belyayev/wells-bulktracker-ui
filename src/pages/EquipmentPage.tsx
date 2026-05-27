@@ -5,7 +5,7 @@ import { Settings, Dashboard, Refresh, ExitToApp, ContentCopy } from '@mui/icons
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, BOPSystems } from '../components/Dashboard';
-import { SupplyVesselsTable, type SupplyVessel, type CargoVessel } from '../components/SupplyVessels';
+import { SupplyVesselsTable, type CargoVessel } from '../components/SupplyVessels';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { useWellData } from '../hooks/useWellData';
 import { useWellOperations } from '../hooks/useWellOperations';
@@ -48,7 +48,6 @@ const EquipmentPage = () => {
         setFluidData,
         setBopSystemsData,
         setMudPumpLinersData,
-        setCurrentWellId,
         loadWellData,
         refreshWellData,
         updateLastUpdated,
