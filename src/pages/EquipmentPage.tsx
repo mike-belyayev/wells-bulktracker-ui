@@ -33,8 +33,6 @@ const EquipmentPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    // Well data hook
-// In EquipmentPage.tsx, update the destructuring to include clearWellData
 const {
     loading,
     currentWellId,
@@ -49,7 +47,6 @@ const {
     setFluidData,
     setBopSystemsData,
     setMudPumpLinersData,
-    setCurrentWellId,  // Add this
     loadWellData,
     refreshWellData,
     updateLastUpdated,
