@@ -10,7 +10,7 @@ interface CasingDiagramProps {
     containerHeight?: number;
 }
 
-const CasingDiagram = ({ profiles, onEdit, readOnly = false, containerHeight = 300 }: CasingDiagramProps) => {
+const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProps) => {
     if (profiles.length === 0) {
         return (
             <div className="casing-diagram-container">
