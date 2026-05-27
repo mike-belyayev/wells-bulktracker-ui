@@ -1,7 +1,7 @@
 // src/hooks/useWellData.ts
 import { useState, useCallback } from 'react';
 import type { SupplyVessel } from '../components/SupplyVessels';
-import type { CasingProfile } from '../components/Dashboard/WellInformation';
+import type { CasingProfile } from '../utils/casingDiagramUtils';
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/BOPSystems';
 import type { PitData } from '../components/Dashboard/MudPitFluidData';
 import wellApiService from '../services/wellApi';

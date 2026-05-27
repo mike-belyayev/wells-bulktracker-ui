@@ -153,12 +153,11 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                 </div>
 
                 {/* Casing Profile Diagram */}
-                <CasingDiagram
-                    profiles={casingProfiles}
-                    onEdit={() => setCasingDialogOpen(true)}
-                    readOnly={readOnly}
-                    containerHeight={containerHeight}
-                />
+<CasingDiagram
+    profiles={casingProfiles}
+    onEdit={() => setCasingDialogOpen(true)}
+    readOnly={readOnly}
+/>
             </div>
 
             {/* Edit Well Info Dialog */}
