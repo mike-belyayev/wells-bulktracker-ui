@@ -1,18 +1,14 @@
-// src/components/SupplyVessels/CargoVesselsSection.tsx
+// src/components/SupplyVessels/CargoVesselsSection.tsx (updated)
 import { useState, useEffect } from 'react';
-import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography } from '@mui/material';
+import { IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Typography, CircularProgress, Alert } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 
-export interface CargoItem {
-    id: string;
-    name: string;
-}
-
+// Updated to match database schema
 export interface CargoVessel {
-    id: string;
-    name: string;
+    _id?: string;  // MongoDB ID
+    vesselName: string;  // Changed from 'name' to 'vesselName'
     arrivalDate: string;
-    containers: CargoItem[];
+    cargoDetails: string[];  // Changed from 'containers' to 'cargoDetails' (array of strings)
 }
 
 interface CargoVesselsSectionProps {
@@ -61,6 +57,7 @@ const formatDateToDisplay = (dateString: string): string => {
 const formatDateForInput = (dateString: string): string => {
     if (!dateString) return '';
     try {
+        // Try to parse existing format
         const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
         if (match) {
             const monthMap: { [key: string]: string } = {
@@ -74,6 +71,7 @@ const formatDateForInput = (dateString: string): string => {
                 return `${fullYear}-${month}-${match[1]}`;
             }
         }
+        // Try ISO format
         const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (isoMatch) {
             return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
@@ -86,9 +84,11 @@ const formatDateForInput = (dateString: string): string => {
 
 const formatDateForSave = (dateString: string): string => {
     if (!dateString) return '';
+    // If already in correct format, return as is
     if (dateString.match(/^\d{2}-[A-Za-z]{3}-\d{2}$/)) {
         return dateString;
     }
+    // Convert from YYYY-MM-DD to DD-MMM-YY
     const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (match) {
         const monthMap: { [key: string]: string } = {
@@ -116,19 +116,21 @@ const CargoVesselsSection = ({
     const [editingVessel, setEditingVessel] = useState<CargoVessel | null>(null);
     const [tempName, setTempName] = useState('');
     const [tempDate, setTempDate] = useState('');
-    const [tempContainers, setTempContainers] = useState<CargoItem[]>([]);
+    const [tempCargoDetails, setTempCargoDetails] = useState<string[]>([]);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Update local state when props change
     useEffect(() => {
+        console.log('CargoVesselsSection received data:', cargoVesselsData);
         setCargoVessels(cargoVesselsData);
     }, [cargoVesselsData]);
 
     const handleAddVessel = () => {
         const newVessel: CargoVessel = {
-            id: Date.now().toString(),
-            name: 'NEW',
+            vesselName: 'NEW VESSEL',
             arrivalDate: new Date().toISOString().split('T')[0],
-            containers: []
+            cargoDetails: []
         };
         setCargoVessels([...cargoVessels, newVessel]);
         handleEditVessel(newVessel);
@@ -136,25 +138,33 @@ const CargoVesselsSection = ({
 
     const handleEditVessel = (vessel: CargoVessel) => {
         setEditingVessel(vessel);
-        setTempName(vessel.name);
+        setTempName(vessel.vesselName);
         setTempDate(formatDateForInput(vessel.arrivalDate));
-        setTempContainers(vessel.containers ? [...vessel.containers] : []);
+        setTempCargoDetails(vessel.cargoDetails ? [...vessel.cargoDetails] : []);
         setEditDialogOpen(true);
+        setError(null);
     };
 
     const handleSaveVessel = async () => {
-        if (editingVessel) {
+        if (!editingVessel) return;
+        
+        setSaving(true);
+        setError(null);
+        
+        try {
             const updatedVessel = {
                 ...editingVessel,
-                name: tempName,
+                vesselName: tempName,
                 arrivalDate: formatDateForSave(tempDate),
-                containers: tempContainers
+                cargoDetails: tempCargoDetails
             };
             
             let updatedVessels: CargoVessel[];
             
-            if (cargoVessels.find(v => v.id === editingVessel.id)) {
-                updatedVessels = cargoVessels.map(v => v.id === editingVessel.id ? updatedVessel : v);
+            const index = cargoVessels.findIndex(v => v._id === editingVessel._id);
+            if (index !== -1) {
+                updatedVessels = [...cargoVessels];
+                updatedVessels[index] = updatedVessel;
             } else {
                 updatedVessels = [...cargoVessels, updatedVessel];
             }
@@ -162,48 +172,59 @@ const CargoVesselsSection = ({
             setCargoVessels(updatedVessels);
             
             if (onCargoUpdate && wellId) {
-                try {
-                    await onCargoUpdate(updatedVessels);
-                } catch (err) {
-                    console.error('Failed to save cargo vessel:', err);
-                }
+                await onCargoUpdate(updatedVessels);
             }
             
             setEditDialogOpen(false);
             setEditingVessel(null);
+        } catch (err) {
+            console.error('Failed to save cargo vessel:', err);
+            setError('Failed to save vessel. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
     const handleDeleteVessel = async () => {
-        if (editingVessel && window.confirm('Are you sure you want to delete this cargo vessel?')) {
-            const updatedVessels = cargoVessels.filter(v => v.id !== editingVessel.id);
+        if (!editingVessel) return;
+        
+        if (!window.confirm('Are you sure you want to delete this cargo vessel?')) {
+            return;
+        }
+        
+        setSaving(true);
+        setError(null);
+        
+        try {
+            const updatedVessels = cargoVessels.filter(v => v._id !== editingVessel._id);
             setCargoVessels(updatedVessels);
             
             if (onCargoUpdate && wellId) {
-                try {
-                    await onCargoUpdate(updatedVessels);
-                } catch (err) {
-                    console.error('Failed to delete cargo vessel:', err);
-                }
+                await onCargoUpdate(updatedVessels);
             }
             
             setEditDialogOpen(false);
             setEditingVessel(null);
+        } catch (err) {
+            console.error('Failed to delete cargo vessel:', err);
+            setError('Failed to delete vessel. Please try again.');
+        } finally {
+            setSaving(false);
         }
     };
 
-    const handleAddContainer = () => {
-        setTempContainers([...tempContainers, { id: Date.now().toString(), name: 'Cargo' }]);
+    const handleAddCargoDetail = () => {
+        setTempCargoDetails([...tempCargoDetails, '']);
     };
 
-    const handleUpdateContainer = (index: number, name: string) => {
-        const updated = [...tempContainers];
-        updated[index] = { ...updated[index], name };
-        setTempContainers(updated);
+    const handleUpdateCargoDetail = (index: number, value: string) => {
+        const updated = [...tempCargoDetails];
+        updated[index] = value;
+        setTempCargoDetails(updated);
     };
 
-    const handleRemoveContainer = (index: number) => {
-        setTempContainers(tempContainers.filter((_, i) => i !== index));
+    const handleRemoveCargoDetail = (index: number) => {
+        setTempCargoDetails(tempCargoDetails.filter((_, i) => i !== index));
     };
 
     // Group by arrival date
@@ -216,18 +237,24 @@ const CargoVesselsSection = ({
 
     const sortedDates = Object.keys(groupedVessels).sort();
 
-    // Helper to arrange containers in 2-column grid
-    const arrangeContainers = (containers: CargoItem[] = []) => {
-        if (!containers || containers.length === 0) return [];
-        const columns: CargoItem[][] = [];
-        for (let i = 0; i < containers.length; i += 2) {
-            columns.push(containers.slice(i, i + 2));
+    // Helper to arrange cargo details in 2-column grid
+    const arrangeCargoDetails = (cargoDetails: string[] = []) => {
+        if (!cargoDetails || cargoDetails.length === 0) return [];
+        const columns: string[][] = [];
+        for (let i = 0; i < cargoDetails.length; i += 2) {
+            columns.push(cargoDetails.slice(i, i + 2));
         }
         return columns;
     };
 
     return (
         <div className="cargo-section-ultra-compact">
+            {error && (
+                <Alert severity="error" onClose={() => setError(null)} sx={{ mb: 1 }}>
+                    {error}
+                </Alert>
+            )}
+            
             <div className="cargo-scroll-horizontal">
                 {sortedDates.map(date => (
                     <div key={date} className="cargo-date-group-ultra">
@@ -236,18 +263,18 @@ const CargoVesselsSection = ({
                         </div>
                         <div className="cargo-vessels-row-ultra">
                             {groupedVessels[date].map(vessel => {
-                                const containerColumns = arrangeContainers(vessel.containers);
-                                const hasContainers = containerColumns && containerColumns.length > 0;
+                                const cargoColumns = arrangeCargoDetails(vessel.cargoDetails);
+                                const hasCargo = cargoColumns && cargoColumns.length > 0;
                                 
                                 return (
-                                    <div key={vessel.id} className="cargo-vessel-ultra">
+                                    <div key={vessel._id || vessel.vesselName} className="cargo-vessel-ultra">
                                         <div className="cargo-containers-grid-ultra">
-                                            {hasContainers ? (
-                                                containerColumns.map((column, colIdx) => (
+                                            {hasCargo ? (
+                                                cargoColumns.map((column, colIdx) => (
                                                     <div key={colIdx} className="cargo-container-column">
-                                                        {column.map(container => (
-                                                            <div key={container.id} className="cargo-container-stack-item-ultra">
-                                                                <span>{container.name}</span>
+                                                        {column.map((cargo, idx) => (
+                                                            <div key={idx} className="cargo-container-stack-item-ultra">
+                                                                <span>{cargo}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -261,7 +288,7 @@ const CargoVesselsSection = ({
                                             )}
                                         </div>
                                         <div className="cargo-vessel-footer-ultra">
-                                            <span className="cargo-vessel-name-ultra">{vessel.name}</span>
+                                            <span className="cargo-vessel-name-ultra">{vessel.vesselName}</span>
                                             {!readOnly && (
                                                 <IconButton size="small" onClick={() => handleEditVessel(vessel)} className="cargo-edit-ultra">
                                                     <Edit fontSize="small" />
@@ -285,15 +312,21 @@ const CargoVesselsSection = ({
             </div>
 
             {/* Edit Dialog */}
-            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+            <Dialog open={editDialogOpen} onClose={() => !saving && setEditDialogOpen(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Edit Cargo Vessel</DialogTitle>
                 <DialogContent>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
                     <TextField 
                         label="Vessel Name" 
                         fullWidth 
                         margin="dense" 
                         value={tempName} 
                         onChange={(e) => setTempName(e.target.value)} 
+                        disabled={saving}
                     />
                     <TextField 
                         label="Arrival Date" 
@@ -303,34 +336,39 @@ const CargoVesselsSection = ({
                         value={tempDate} 
                         onChange={(e) => setTempDate(e.target.value)} 
                         InputLabelProps={{ shrink: true }} 
+                        disabled={saving}
                     />
-                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Containers:</Typography>
-                    {tempContainers.length === 0 && (
+                    <Typography variant="subtitle2" sx={{ mt: 2, mb: 1 }}>Cargo Details:</Typography>
+                    {tempCargoDetails.length === 0 && (
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-                            No containers. Click "Add Container" to add one.
+                            No cargo items. Click "Add Cargo" to add one.
                         </Typography>
                     )}
-                    {tempContainers.map((container, idx) => (
-                        <div key={container.id} className="cargo-container-edit-row">
+                    {tempCargoDetails.map((cargo, idx) => (
+                        <div key={idx} className="cargo-container-edit-row">
                             <TextField 
                                 size="small" 
-                                value={container.name} 
-                                onChange={(e) => handleUpdateContainer(idx, e.target.value)} 
+                                label={`Cargo ${idx + 1}`}
+                                value={cargo} 
+                                onChange={(e) => handleUpdateCargoDetail(idx, e.target.value)} 
                                 fullWidth 
+                                disabled={saving}
                             />
-                            <IconButton onClick={() => handleRemoveContainer(idx)} color="error">
+                            <IconButton onClick={() => handleRemoveCargoDetail(idx)} color="error" disabled={saving}>
                                 <Delete fontSize="small" />
                             </IconButton>
                         </div>
                     ))}
-                    <Button startIcon={<Add />} onClick={handleAddContainer} size="small" sx={{ mt: 1 }}>
-                        Add Container
+                    <Button startIcon={<Add />} onClick={handleAddCargoDetail} size="small" sx={{ mt: 1 }} disabled={saving}>
+                        Add Cargo
                     </Button>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleDeleteVessel} color="error">Delete Vessel</Button>
-                    <Button onClick={handleSaveVessel} variant="contained" color="primary">Save Changes</Button>
+                    <Button onClick={() => setEditDialogOpen(false)} disabled={saving}>Cancel</Button>
+                    <Button onClick={handleDeleteVessel} color="error" disabled={saving}>Delete Vessel</Button>
+                    <Button onClick={handleSaveVessel} variant="contained" color="primary" disabled={saving}>
+                        {saving ? <CircularProgress size={24} /> : 'Save Changes'}
+                    </Button>
                 </DialogActions>
             </Dialog>
         </div>

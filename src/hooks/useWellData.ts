@@ -1,6 +1,6 @@
 // src/hooks/useWellData.ts
 import { useState, useCallback } from 'react';
-import type { SupplyVessel } from '../components/SupplyVessels';
+import type { SupplyVessel, CargoVessel } from '../components/SupplyVessels';
 import type { CasingProfile } from '../utils/casingDiagramUtils';
 import type { BopSystem, MudPumpLiner } from '../components/Dashboard/BOPSystems';
 import type { PitData } from '../components/Dashboard/MudPitFluidData';
@@ -25,6 +25,7 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
     const [loading, setLoading] = useState(false);
     const [currentWellId, setCurrentWellId] = useState<string | null>(null);
     const [vessels, setVessels] = useState<SupplyVessel[]>([]);
+    const [cargoVessels, setCargoVessels] = useState<CargoVessel[]>([]); // ✅ Add cargo vessels state
     const [lastUpdated, setLastUpdated] = useState<string>('');
     const [wellData, setWellData] = useState<{
         wellName?: string;
@@ -63,6 +64,14 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
             setFluidData(well.mudPits || []);
             setBopSystemsData(well.bopSystems || []);
             setMudPumpLinersData(well.mudPumpLiners || []);
+            
+            // ✅ Load cargo vessels from API
+            if (well.cargoVessels && Array.isArray(well.cargoVessels)) {
+                console.log('Loading cargo vessels from API:', well.cargoVessels);
+                setCargoVessels(well.cargoVessels);
+            } else {
+                setCargoVessels([]);
+            }
             
             if (well.supplyVessels && Array.isArray(well.supplyVessels)) {
                 const formattedVessels = well.supplyVessels.map((vessel: any, index: number) => ({
@@ -106,6 +115,7 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
         setCurrentWellId(null);
         setWellData(undefined);
         setVessels([]);
+        setCargoVessels([]); // ✅ Clear cargo vessels too
         setFluidData([]);
         setBopSystemsData([]);
         setMudPumpLinersData([]);
@@ -116,12 +126,14 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
         loading,
         currentWellId,
         vessels,
+        cargoVessels,  // ✅ Export cargoVessels
         lastUpdated,
         wellData,
         fluidData,
         bopSystemsData,
         mudPumpLinersData,
         setVessels,
+        setCargoVessels,  // ✅ Export setCargoVessels
         setWellData,
         setFluidData,
         setBopSystemsData,

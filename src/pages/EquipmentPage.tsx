@@ -33,7 +33,7 @@ const EquipmentPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    // Well data hook
+    // Well data hook - now includes cargoVessels
     const {
         loading,
         currentWellId,
@@ -43,19 +43,18 @@ const EquipmentPage = () => {
         fluidData,
         bopSystemsData,
         mudPumpLinersData,
+        cargoVessels,
         setVessels,
         setWellData,
         setFluidData,
         setBopSystemsData,
         setMudPumpLinersData,
+        setCargoVessels,
         loadWellData,
         refreshWellData,
         updateLastUpdated,
         clearWellData
     } = useWellData(showSnackbar);
-
-    // Cargo vessels state
-    const [cargoVessels, setCargoVessels] = useState<CargoVessel[]>([]);
 
     // Auto-refresh hook
     const { autoRefreshEnabled, countdown, formatCountdown, toggleAutoRefresh } = useAutoRefresh(
@@ -91,21 +90,75 @@ const EquipmentPage = () => {
         showSnackbar
     );
 
-    // Cargo vessels update handler
+    // Cargo vessels update handler - FIXED: Don't refresh immediately
     const handleCargoUpdate = useCallback(async (updatedVessels: CargoVessel[]) => {
-        if (currentWellId) {
-            try {
-                await wellApi.patchWell(currentWellId, { cargoVessels: updatedVessels });
-                setCargoVessels(updatedVessels);
-                updateLastUpdated();
-                showSnackbar('Cargo vessels updated', 'success');
-            } catch (err) {
-                console.error('Failed to update cargo vessels:', err);
-                showSnackbar('Failed to update cargo vessels', 'error');
-                throw err;
-            }
+        if (!currentWellId) {
+            console.error('No current well ID');
+            showSnackbar('Cannot save: No well selected', 'error');
+            return;
         }
-    }, [currentWellId, updateLastUpdated, showSnackbar]);
+
+        console.log('=== CARGO VESSEL SAVE START ===');
+        console.log('Current Well ID:', currentWellId);
+        console.log('Vessels to save:', JSON.stringify(updatedVessels, null, 2));
+        
+        try {
+            // First, update the local state immediately for UI responsiveness
+            setCargoVessels(updatedVessels);
+            
+            // Then save to API
+            const patchData = { cargoVessels: updatedVessels };
+            console.log('Sending PATCH request with:', patchData);
+            
+            const response = await wellApi.patchWell(currentWellId, patchData);
+            console.log('API Response:', response);
+            
+            if (response && response.cargoVessels) {
+                console.log('API returned cargo vessels:', response.cargoVessels);
+                // Update with the API response to ensure consistency
+                setCargoVessels(response.cargoVessels);
+            }
+            
+            updateLastUpdated();
+            showSnackbar('Cargo vessels updated successfully', 'success');
+            console.log('=== CARGO VESSEL SAVE SUCCESS ===');
+            
+            // Optional: Do a gentle refresh without showing loading indicator
+            // This ensures we have the latest data but doesn't wipe out our changes
+            setTimeout(async () => {
+                if (currentWellId) {
+                    try {
+                        const refreshedWell = await wellApi.getWell(currentWellId);
+                        if (refreshedWell.cargoVessels) {
+                            setCargoVessels(refreshedWell.cargoVessels);
+                        }
+                    } catch (err) {
+                        console.error('Background refresh failed:', err);
+                    }
+                }
+            }, 500);
+            
+        } catch (err: any) {
+            console.error('=== CARGO VESSEL SAVE FAILED ===');
+            console.error('Error details:', err);
+            console.error('Error response:', err.response?.data);
+            console.error('Error status:', err.response?.status);
+            
+            // Revert local state on error
+            // Reload from API to get the actual current state
+            try {
+                const freshWell = await wellApi.getWell(currentWellId);
+                if (freshWell.cargoVessels) {
+                    setCargoVessels(freshWell.cargoVessels);
+                }
+            } catch (refreshErr) {
+                console.error('Failed to revert state:', refreshErr);
+            }
+            
+            showSnackbar(`Failed to update cargo vessels: ${err.response?.data?.message || err.message || 'Unknown error'}`, 'error');
+            throw err;
+        }
+    }, [currentWellId, setCargoVessels, updateLastUpdated, showSnackbar]);
 
     // Well selector hook
     const {
@@ -117,13 +170,11 @@ const EquipmentPage = () => {
         handleWellChange,
         handleCloneWell
     } = useWellSelector(userRig, async (wellId) => {
+        console.log('=== WELL SELECTION CHANGED ===');
+        console.log('Loading well:', wellId);
         const well = await loadWellData(wellId);
-        // Load cargo vessels from well data
-        if (well && well.cargoVessels) {
-            setCargoVessels(well.cargoVessels);
-        } else {
-            setCargoVessels([]);
-        }
+        console.log('Loaded well data:', well);
+        console.log('Cargo vessels from loaded well:', well?.cargoVessels);
     }, showSnackbar);
 
     // Delete well handler
