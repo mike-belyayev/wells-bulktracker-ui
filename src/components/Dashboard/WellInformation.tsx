@@ -141,14 +141,14 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                 {/* 3-Value Table */}
                 <div className="metrics-table">
                     <div className="metrics-header">
-                        <span className="metric-header-cell">Water Depth</span>
-                        <span className="metric-header-cell">Air Gap</span>
-                        <span className="metric-header-cell">HPWH</span>
+                        <span className="metric-header-cell">Water Depth (m)</span>
+                        <span className="metric-header-cell">Air Gap (m)</span>
+                        <span className="metric-header-cell">HPWH Dat. (m)</span>
                     </div>
                     <div className="metrics-values">
-                        <span className="metric-value-cell">{data.waterDepth || 0} m</span>
-                        <span className="metric-value-cell">{data.airGap || 0} m</span>
-                        <span className="metric-value-cell">{(data as any).HPWH || 0} m</span>
+                        <span className="metric-value-cell">{data.waterDepth || 0}</span>
+                        <span className="metric-value-cell">{data.airGap || 0}</span>
+                        <span className="metric-value-cell">{(data as any).HPWH || 0}</span>
                     </div>
                 </div>
 

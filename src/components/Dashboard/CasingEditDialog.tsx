@@ -1,6 +1,6 @@
 // src/components/Dashboard/CasingEditDialog.tsx
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton, MenuItem, Select, FormControl, InputLabel, Typography } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton, MenuItem, Select, FormControl, InputLabel, Typography, Box } from '@mui/material';
 import { Add, Delete, Edit as EditIcon, Save, Cancel, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import type { CasingProfile } from '../../utils/casingDiagramUtils';
 
@@ -85,70 +85,84 @@ const CasingEditDialog = ({ open, profiles, onClose, onSave }: CasingEditDialogP
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>Edit Casing Profiles</DialogTitle>
+            <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>Edit Casing Profiles</DialogTitle>
             <DialogContent>
                 <div className="casing-edit-list">
                     {tempProfiles.length === 0 && (
-                        <Typography variant="body2" color="textSecondary" sx={{ py: 2, textAlign: 'center' }}>
+                        <Typography variant="body2" color="textSecondary" sx={{ py: 4, textAlign: 'center' }}>
                             No casing profiles. Click "Add" to create one.
                         </Typography>
                     )}
                     {tempProfiles.map((profile, idx) => (
                         <div key={idx} className="casing-edit-row">
                             {editingIndex === idx ? (
+                                // Edit Mode - Full width inputs using flexbox
                                 <div className="casing-edit-fields">
-                                    <TextField
-                                        size="small"
-                                        label="Size"
-                                        value={editingData.size || ''}
-                                        onChange={(e) => handleInputChange('size', e.target.value)}
-                                        sx={{ width: 120 }}
-                                        autoFocus
-                                    />
-                                    <FormControl size="small" sx={{ width: 120 }}>
-                                        <InputLabel>Type</InputLabel>
-                                        <Select
-                                            value={editingData.type || 'casing'}
-                                            label="Type"
-                                            onChange={(e) => handleInputChange('type', e.target.value)}
-                                        >
-                                            <MenuItem value="casing">Casing</MenuItem>
-                                            <MenuItem value="liner">Liner</MenuItem>
-                                        </Select>
-                                    </FormControl>
-                                    <TextField
-                                        size="small"
-                                        label="Description"
-                                        value={editingData.description || ''}
-                                        onChange={(e) => handleInputChange('description', e.target.value)}
-                                        sx={{ width: 150 }}
-                                    />
-                                    <div className="casing-edit-actions">
-                                        <IconButton size="small" onClick={handleSaveEdit} color="primary">
-                                            <Save fontSize="small" />
+                                    <div className="edit-field-group">
+                                        <TextField
+                                            size="medium"
+                                            label="Size"
+                                            value={editingData.size || ''}
+                                            onChange={(e) => handleInputChange('size', e.target.value)}
+                                            fullWidth
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="edit-field-group">
+                                        <FormControl size="medium" fullWidth>
+                                            <InputLabel>Type</InputLabel>
+                                            <Select
+                                                value={editingData.type || 'casing'}
+                                                label="Type"
+                                                onChange={(e) => handleInputChange('type', e.target.value)}
+                                            >
+                                                <MenuItem value="casing">Casing</MenuItem>
+                                                <MenuItem value="liner">Liner</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </div>
+                                    <div className="edit-field-group">
+                                        <TextField
+                                            size="medium"
+                                            label="Description"
+                                            value={editingData.description || ''}
+                                            onChange={(e) => handleInputChange('description', e.target.value)}
+                                            fullWidth
+                                        />
+                                    </div>
+                                    <div className="edit-actions-group">
+                                        <IconButton size="medium" onClick={handleSaveEdit} color="primary">
+                                            <Save fontSize="medium" />
                                         </IconButton>
-                                        <IconButton size="small" onClick={handleCancelEdit} color="secondary">
-                                            <Cancel fontSize="small" />
+                                        <IconButton size="medium" onClick={handleCancelEdit} color="secondary">
+                                            <Cancel fontSize="medium" />
                                         </IconButton>
                                     </div>
                                 </div>
                             ) : (
+                                // View Mode
                                 <div className="casing-edit-row-content">
-                                    <span className="casing-edit-size">{profile.size || '—'}</span>
-                                    <span className="casing-edit-type">{profile.type}</span>
-                                    <span className="casing-edit-desc">{profile.description || '—'}</span>
-                                    <div className="casing-edit-actions">
-                                        <IconButton size="small" onClick={() => moveUp(idx)} disabled={idx === 0}>
-                                            <ArrowUpward fontSize="small" />
+                                    <div className="view-field-group">
+                                        <span className="casing-edit-size">{profile.size || '—'}</span>
+                                    </div>
+                                    <div className="view-field-group">
+                                        <span className="casing-edit-type">{profile.type}</span>
+                                    </div>
+                                    <div className="view-field-group">
+                                        <span className="casing-edit-desc">{profile.description || '—'}</span>
+                                    </div>
+                                    <div className="view-actions-group">
+                                        <IconButton size="medium" onClick={() => moveUp(idx)} disabled={idx === 0}>
+                                            <ArrowUpward fontSize="medium" />
                                         </IconButton>
-                                        <IconButton size="small" onClick={() => moveDown(idx)} disabled={idx === tempProfiles.length - 1}>
-                                            <ArrowDownward fontSize="small" />
+                                        <IconButton size="medium" onClick={() => moveDown(idx)} disabled={idx === tempProfiles.length - 1}>
+                                            <ArrowDownward fontSize="medium" />
                                         </IconButton>
-                                        <IconButton size="small" onClick={() => handleEdit(idx)} color="primary">
-                                            <EditIcon fontSize="small" />
+                                        <IconButton size="medium" onClick={() => handleEdit(idx)} color="primary">
+                                            <EditIcon fontSize="medium" />
                                         </IconButton>
-                                        <IconButton size="small" onClick={() => handleDelete(idx)} color="error">
-                                            <Delete fontSize="small" />
+                                        <IconButton size="medium" onClick={() => handleDelete(idx)} color="error">
+                                            <Delete fontSize="medium" />
                                         </IconButton>
                                     </div>
                                 </div>
@@ -156,13 +170,21 @@ const CasingEditDialog = ({ open, profiles, onClose, onSave }: CasingEditDialogP
                         </div>
                     ))}
                 </div>
-                <Button size="small" startIcon={<Add />} onClick={handleAdd} className="add-casing-dialog-btn">
+                <Button 
+                    size="large" 
+                    startIcon={<Add />} 
+                    onClick={handleAdd} 
+                    variant="outlined"
+                    sx={{ mt: 2, textTransform: 'none' }}
+                >
                     Add Casing/Liner
                 </Button>
             </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
-                <Button onClick={handleSave} variant="contained" color="primary">Save Changes</Button>
+            <DialogActions sx={{ p: 2, gap: 1 }}>
+                <Button onClick={onClose} size="large">Cancel</Button>
+                <Button onClick={handleSave} variant="contained" color="primary" size="large">
+                    Save Changes
+                </Button>
             </DialogActions>
         </Dialog>
     );

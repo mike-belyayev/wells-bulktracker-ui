@@ -28,11 +28,8 @@
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
-}
-
-.casing-diagram-container {
-    flex: 1;
-    min-height: 0;
+    padding: 8px;
+    gap: 8px;
 }
 
 /* Well Name Section */
@@ -40,7 +37,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    padding: 4px;
 }
 
 .well-name-large {
@@ -61,7 +58,7 @@
 
 /* 3-Value Table */
 .metrics-table {
-    margin-bottom: 16px;
+    margin-bottom: 4px;
     border: 1px solid #e0e0e0;
     border-radius: 6px;
     overflow: hidden;
@@ -79,7 +76,6 @@
     font-weight: 700;
     color: white;
     text-align: center;
-    text-transform: uppercase;
     border-right: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -94,8 +90,8 @@
 }
 
 .metric-value-cell {
-    padding: 8px;
-    font-size: 0.8rem;
+    padding: 6px;
+    font-size: 1rem;
     font-weight: 700;
     color: #1976d2;
     text-align: center;
@@ -107,184 +103,109 @@
     border-right: none;
 }
 
-
-.diagram-wrapper {
-    position: relative;
-    flex: 1;
-    min-height: 200px;
-    background-color: #fafafa;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 16px;
-}
-
-.diagram-area {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 180px;
-    background: #f5f5f5;
-    border-radius: 4px;
-    overflow: visible;
-}
-
-/* Casing Strings */
-.casing-string {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    transition: all 0.2s ease;
-    z-index: 5;
-}
-
-.casing-string:hover {
-    transform: translateX(-2px);
-    z-index: 10;
-}
-
-.casing-line {
-    height: 100%;
-    background: #000000;
-    position: relative;
-}
-
-/* Liner top flat tip */
-.casing-top-flat {
-    position: absolute;
-    background: #000000;
-}
-
-/* Shoe tip at bottom */
-.casing-tip-shoe {
-    position: absolute;
-    width: 0;
-    height: 0;
-}
-
-.casing-label {
-    position: absolute;
-    white-space: nowrap;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 3px;
-    border-left: 2px solid #000000;
-    pointer-events: none;
-    z-index: 15;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.casing-size {
-    font-weight: 800 !important;
-    color: #000000;
-    display: block;
-    line-height: 1.2;
-}
-
-.casing-type {
-    color: #1976d2;
-    display: block;
-    line-height: 1.2;
-    font-size: 0.5rem !important;
-    text-transform: uppercase;
-}
-
-/* Edit button at bottom right */
-.casing-edit-bottom-btn {
-    position: absolute !important;
-    bottom: 8px;
-    right: 8px;
-    background: white !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    z-index: 10;
-}
-
-.casing-edit-bottom-btn:hover {
-    background: #f5f5f5 !important;
-}
-
-.add-casing-btn {
-    margin-top: 8px;
-    width: 100%;
-    text-transform: none !important;
-}
-
-.empty-diagram {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 150px;
-    text-align: center;
-    padding: 20px;
-}
-
-/* Casing Edit Dialog */
+/* Casing Edit Dialog Styles */
 .casing-edit-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin: 12px 0;
-    max-height: 350px;
+    gap: 12px;
+    margin: 16px 0;
+    max-height: 500px;
     overflow-y: auto;
 }
 
 .casing-edit-row {
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s ease;
 }
 
+.casing-edit-row:hover {
+    background-color: #fafafa;
+    border-color: #bdbdbd;
+}
+
+/* Edit Mode Layout */
 .casing-edit-fields {
     display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.edit-field-group {
+    flex: 1;
+    min-width: 150px;
+}
+
+.edit-actions-group {
+    display: flex;
     gap: 8px;
+    align-items: center;
+}
+
+/* View Mode Layout */
+.casing-edit-row-content {
+    display: flex;
+    gap: 16px;
     align-items: center;
     flex-wrap: wrap;
 }
 
-.casing-edit-row-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
+.view-field-group {
+    flex: 1;
+    min-width: 150px;
 }
 
+.view-actions-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Text styles for edit dialog */
 .casing-edit-size {
     font-weight: 700;
-    font-size: 0.85rem;
-    min-width: 100px;
+    font-size: 1rem;
+    color: #1a1a2e;
+    display: block;
 }
 
 .casing-edit-type {
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     color: #1976d2;
-    min-width: 60px;
     text-transform: uppercase;
+    font-weight: 600;
+    display: block;
 }
 
-.casing-edit-actions {
-    display: flex;
-    gap: 4px;
+.casing-edit-desc {
+    font-size: 0.9rem;
+    color: #666;
+    display: block;
 }
 
-.casing-add-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e0e0e0;
+/* Scrollbar for edit list */
+.casing-edit-list::-webkit-scrollbar {
+    width: 6px;
 }
 
-/* Hover effect */
-.casing-string:hover .casing-label {
-    background: white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-    transform: scale(1.02);
-    z-index: 20;
+.casing-edit-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
 }
 
-/* Scrollbar */
+.casing-edit-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.casing-edit-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Main scrollbar */
 .panel-content::-webkit-scrollbar {
     width: 4px;
 }
@@ -299,100 +220,6 @@
     border-radius: 2px;
 }
 
-/* Add to WellInformation.css */
-
-.casing-edit-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 16px 0;
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.casing-edit-row {
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 12px;
-}
-
-.casing-edit-fields {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.casing-edit-row-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.casing-edit-size {
-    font-weight: 700;
-    font-size: 0.85rem;
-    min-width: 80px;
-}
-
-.casing-edit-type {
-    font-size: 0.7rem;
-    color: #1976d2;
-    min-width: 70px;
-    text-transform: uppercase;
-}
-
-.casing-edit-desc {
-    font-size: 0.7rem;
-    color: #666;
-    flex: 1;
-    min-width: 120px;
-}
-
-.casing-edit-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.add-casing-dialog-btn {
-    margin-top: 8px;
-    text-transform: none !important;
-}
-
-.casing-edit-bottom-btn {
-    position: absolute !important;
-    bottom: 8px;
-    right: 8px;
-    background: white !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    z-index: 10;
-}
-
-.casing-edit-bottom-btn:hover {
-    background: #f5f5f5 !important;
-}
-
-.empty-diagram {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    min-height: 150px;
-    text-align: center;
-    padding: 20px;
-}
-
-/* Add to WellInformation.css */
-
-.casing-desc {
-    color: #666;
-    display: block;
-    line-height: 1.2;
-    font-size: 0.5rem !important;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .well-name-large {
@@ -405,17 +232,68 @@
     }
     
     .metric-value-cell {
-        font-size: 0.7rem;
+        font-size: 0.85rem;
         padding: 6px;
     }
     
+    .casing-edit-fields,
+    .casing-edit-row-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .edit-field-group,
+    .view-field-group {
+        width: 100%;
+    }
+    
+    .edit-actions-group,
+    .view-actions-group {
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+    
     .casing-edit-size {
-        font-size: 0.7rem;
-        min-width: 70px;
+        font-size: 0.9rem;
     }
     
     .casing-edit-type {
-        font-size: 0.6rem;
-        min-width: 50px;
+        font-size: 0.8rem;
+    }
+    
+    .casing-edit-desc {
+        font-size: 0.8rem;
+    }
+    
+    .casing-edit-row {
+        padding: 12px;
+    }
+}
+
+@media (min-width: 2560px) {
+    .well-name-large {
+        font-size: 1.5rem !important;
+    }
+    
+    .metric-header-cell {
+        font-size: 0.85rem;
+        padding: 10px;
+    }
+    
+    .metric-value-cell {
+        font-size: 1.3rem;
+        padding: 10px;
+    }
+    
+    .casing-edit-size {
+        font-size: 1.2rem;
+    }
+    
+    .casing-edit-type {
+        font-size: 1.1rem;
+    }
+    
+    .casing-edit-desc {
+        font-size: 1.1rem;
     }
 }

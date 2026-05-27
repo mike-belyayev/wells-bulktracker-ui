@@ -24,7 +24,7 @@ const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProp
                         <IconButton 
                             size="small" 
                             onClick={onEdit} 
-                            className="casing-edit-bottom-btn"
+                            className="casing-edit-top-btn"
                             title="Edit Casing Profiles"
                         >
                             <Edit fontSize="small" />
@@ -35,37 +35,63 @@ const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProp
         );
     }
     
+    // Keep original order: shallowest at top, deepest at bottom
+    // But offset: bottom (deepest) gets 0px, each higher gets +12px offset to the right
+    const orderedProfiles = [...profiles];
+    
+    // Calculate offset based on position from bottom
+    const total = orderedProfiles.length;
+    
     return (
         <div className="casing-diagram-container">
             <div className="diagram-wrapper">
-                <div className="casing-stack">
-                    {profiles.map((profile, idx) => (
-                        <div 
-                            key={profile.index}
-                            className="casing-item"
-                            style={{
-                                marginRight: `${idx * 8}px`
-                            }}
-                        >
-                            <div className="casing-text">
-                                <span className="casing-size">{profile.size}</span>
-                                {profile.description && (
-                                    <span className="casing-description">{profile.description}</span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {/* Edit button at top right */}
                 {!readOnly && (
                     <IconButton 
                         size="small" 
                         onClick={onEdit} 
-                        className="casing-edit-bottom-btn"
+                        className="casing-edit-top-btn"
                         title="Edit Casing Profiles"
                     >
                         <Edit fontSize="small" />
                     </IconButton>
                 )}
+                
+                <div className="casing-stack">
+                    {orderedProfiles.map((profile, idx) => {
+                        // Calculate offset from bottom: deepest (last) gets 0px, each above gets +12px
+                        const distanceFromBottom = total - 1 - idx;
+                        const offset = distanceFromBottom * 12;
+                        
+                        return (
+                            <div 
+                                key={profile.index}
+                                className="casing-row"
+                                style={{
+                                    marginLeft: `${offset}px`,
+                                    zIndex: total - idx
+                                }}
+                            >
+                                {/* Dotted border at the bottom of each row (except last) */}
+                                {idx < total - 1 && <div className="casing-dotted-border" />}
+                                
+                                {/* Vertical line with tip sticking to the right */}
+                                <div className={`casing-line-container ${profile.type}`}>
+                                    <div className="casing-vertical-line" />
+                                    <div className="casing-line-tip" />
+                                </div>
+                                
+                                {/* Text label at bottom right */}
+                                <div className="casing-text">
+                                    <span className="casing-size">{profile.size}</span>
+                                    {profile.description && (
+                                        <span className="casing-description">{profile.description}</span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );
