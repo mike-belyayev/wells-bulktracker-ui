@@ -1,4 +1,3 @@
-// src/components/Dashboard/CasingDiagram.tsx
 import { Typography, IconButton } from '@mui/material';
 import { Edit } from '@mui/icons-material';
 import type { CasingProfile } from '../../utils/casingDiagramUtils';
@@ -8,16 +7,14 @@ interface CasingDiagramProps {
     profiles: CasingProfile[];
     onEdit: () => void;
     readOnly?: boolean;
-    containerHeight?: number;  // Add this prop
+    containerHeight?: number;
 }
 
 const CasingDiagram = ({ profiles, onEdit, readOnly = false, containerHeight = 300 }: CasingDiagramProps) => {
-    const diagramHeight = Math.max(200, containerHeight);
-    
     if (profiles.length === 0) {
         return (
             <div className="casing-diagram-container">
-                <div className="diagram-wrapper" style={{ minHeight: `${diagramHeight}px` }}>
+                <div className="diagram-wrapper">
                     <div className="empty-diagram">
                         <Typography variant="body2" color="textSecondary">
                             No casing profiles defined.
@@ -44,7 +41,7 @@ const CasingDiagram = ({ profiles, onEdit, readOnly = false, containerHeight = 3
     
     return (
         <div className="casing-diagram-container">
-            <div className="diagram-wrapper" style={{ minHeight: `${diagramHeight}px` }}>
+            <div className="diagram-wrapper">
                 {/* Edit button at top right */}
                 {!readOnly && (
                     <IconButton 
