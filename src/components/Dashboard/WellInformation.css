@@ -296,6 +296,17 @@
     border-radius: 2px;
 }
 
+/* Add to WellInformation.css */
+
+.delete-well-btn {
+    color: #f44336 !important;
+    background: rgba(244, 67, 54, 0.1) !important;
+}
+
+.delete-well-btn:hover {
+    background: rgba(244, 67, 54, 0.2) !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .casing-edit-fields,

@@ -10,6 +10,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { useWellData } from '../hooks/useWellData';
 import { useWellOperations } from '../hooks/useWellOperations';
 import { useWellSelector } from '../hooks/useWellSelector';
+import { wellApi, siteApi } from '../services/wellApi';
 import './EquipmentPage.css';
 
 const EquipmentPage = () => {
@@ -98,6 +99,36 @@ const EquipmentPage = () => {
     } = useWellSelector(userRig, async (wellId) => {
         await loadWellData(wellId);
     }, showSnackbar);
+
+    // Delete well handler - MUST be defined AFTER hooks
+    const handleDeleteWell = async () => {
+        if (currentWellId) {
+            try {
+                await wellApi.deleteWell(currentWellId);
+                showSnackbar('Well deleted successfully', 'success');
+                
+                // Refresh the wells list
+                const wells = await wellApi.getWellsByOwner(userRig);
+                if (wells.length > 0) {
+                    const newWellId = wells[0]._id;
+                    await loadWellData(newWellId);
+                    // Update active well in site
+                    await siteApi.setActiveWell(userRig, newWellId);
+                } else {
+                    // No wells left, show empty state
+                    setCurrentWellId(null);
+                    setWellData(undefined);
+                    setVessels([]);
+                    setFluidData([]);
+                    setBopSystemsData([]);
+                    setMudPumpLinersData([]);
+                }
+            } catch (err) {
+                console.error('Failed to delete well:', err);
+                showSnackbar('Failed to delete well', 'error');
+            }
+        }
+    };
 
     const handleRefresh = async () => {
         if (currentWellId) {
@@ -190,6 +221,7 @@ const EquipmentPage = () => {
                                 wellId={currentWellId || undefined}
                                 onUpdate={handleWellInfoUpdate}
                                 onCasingUpdate={handleCasingUpdate}
+                                onDelete={handleDeleteWell}
                                 onRefresh={() => refreshWellData(currentWellId || '')}
                                 readOnly={!isAdmin}
                             />

@@ -1,6 +1,6 @@
 // src/components/Dashboard/WellInformation.tsx
-import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
-import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, FormControl, InputLabel, CircularProgress } from '@mui/material';
+import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward, Warning } from '@mui/icons-material';
 import { useEffect, useRef, useState } from 'react';
 import './WellInformation.css';
 
@@ -15,7 +15,8 @@ export interface WellInformationProps {
     wellId?: string;
     onUpdate?: (data: any) => Promise<void>;
     onCasingUpdate?: (data: CasingProfile[]) => Promise<void>;
-    onRefresh?: () => Promise<void>;  // Add refresh callback
+    onDelete?: () => Promise<void>;
+    onRefresh?: () => Promise<void>;
     readOnly?: boolean;
 }
 
@@ -29,12 +30,14 @@ export interface CasingProfile {
     id?: string;
 }
 
-const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh, readOnly = false }: WellInformationProps) => {
+const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
-    const [, setContainerHeight] = useState(500);
+    const [containerHeight, setContainerHeight] = useState(500);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [editingCasingIndex, setEditingCasingIndex] = useState<number | null>(null);
     const [editingCasingData, setEditingCasingData] = useState<Partial<CasingProfile>>({});
     const [newCasing, setNewCasing] = useState<Partial<CasingProfile>>({ size: '', type: 'casing', depth: 0, description: '' });
@@ -68,11 +71,9 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
         type: p.type as 'casing' | 'liner'
     }));
     
-    // Sort by depth for diagram
     const sortedProfiles = [...casingProfiles].sort((a, b) => a.depth - b.depth);
     const maxDepth = Math.max(...sortedProfiles.map(p => p.depth), 2000);
 
-    // Calculate positions for diagram
     const getProfilePosition = (profile: CasingProfile) => {
         const startPercent = ((profile.startDepth || 0) / maxDepth) * 100;
         const endPercent = (profile.depth / maxDepth) * 100;
@@ -122,9 +123,8 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
                     airGap: editData.airGap,
                     HPWH: editData.HPWH
                 });
-                // Refresh data after save
-                if (onRefresh) await onRefresh();
                 setEditDialogOpen(false);
+                if (onRefresh) await onRefresh();
             } catch (err) {
                 console.error('Failed to update well info:', err);
             }
@@ -133,6 +133,25 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
 
     const handleInputChange = (field: string, value: string | number) => {
         setEditData({ ...editData, [field]: value });
+    };
+
+    const handleDeleteClick = () => {
+        setEditDialogOpen(false);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteWell = async () => {
+        if (onDelete && wellId) {
+            setDeleting(true);
+            try {
+                await onDelete();
+                setDeleteDialogOpen(false);
+            } catch (err) {
+                console.error('Failed to delete well:', err);
+            } finally {
+                setDeleting(false);
+            }
+        }
     };
 
     // Casing profile handlers
@@ -254,7 +273,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
                     </div>
                 </div>
 
-                {/* Casing Profile Diagram - takes remaining space, no depth scale */}
+                {/* Casing Profile Diagram */}
                 <div className="casing-diagram-container">
                     <div className="diagram-wrapper">
                         <div className="diagram-area">
@@ -273,7 +292,6 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
                                         }}
                                     >
                                         <div className="casing-line" style={{ width: `${lineWidth}px` }} />
-                                        {/* Top tip for liner */}
                                         {profile.type === 'liner' && (
                                             <div className="casing-top-flat" style={{
                                                 width: `${tipWidth}px`,
@@ -282,7 +300,6 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
                                                 left: `-${lineWidth / 2}px`
                                             }} />
                                         )}
-                                        {/* Bottom shoe tip */}
                                         <div className="casing-tip-shoe" style={{
                                             borderLeft: `${tipWidth}px solid #000000`,
                                             borderTop: `${tipWidth * 0.4}px solid transparent`,
@@ -351,8 +368,52 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onRefresh
                     />
                 </DialogContent>
                 <DialogActions>
+                    <Button onClick={handleDeleteClick} color="error" startIcon={<Delete />}>
+                        Delete Well
+                    </Button>
                     <Button onClick={handleEditClose}>Cancel</Button>
                     <Button onClick={handleEditSave} variant="contained" color="primary">Save</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Well Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: '#d32f2f' }}>
+                    <Warning /> Delete Well
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" gutterBottom>
+                        Are you sure you want to delete the well <strong>"{data.wellName}"</strong>?
+                    </Typography>
+                    <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                        ⚠️ This will delete the ENTIRE WELL including:
+                    </Typography>
+                    <ul style={{ marginTop: 4, marginBottom: 8 }}>
+                        <li>All well information</li>
+                        <li>All casing profiles</li>
+                        <li>All mud pits data</li>
+                        <li>All BOP systems data</li>
+                        <li>All mud pump liners data</li>
+                        <li>All supply vessels</li>
+                        <li>All cargo vessels</li>
+                    </ul>
+                    <Typography variant="body2" color="error" fontWeight="bold">
+                        This action cannot be undone!
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+                        Just Kidding!
+                    </Button>
+                    <Button 
+                        onClick={handleDeleteWell} 
+                        variant="contained" 
+                        color="error"
+                        disabled={deleting}
+                        startIcon={deleting ? <CircularProgress size={16} /> : <Delete />}
+                    >
+                        Roger That!
+                    </Button>
                 </DialogActions>
             </Dialog>
 
