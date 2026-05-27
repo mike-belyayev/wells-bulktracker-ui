@@ -9,38 +9,7 @@
     border: 1px solid #e0e0e0;
 }
 
-/* Supply Vessels Header - Dark, single line */
-.supply-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 16px;
-    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
-}
-
-.supply-title {
-    font-weight: 700 !important;
-    font-size: 0.75rem !important;
-    color: white !important;
-    letter-spacing: 0.5px;
-}
-
-.supply-header-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.edit-supply-btn {
-    color: white !important;
-    background: rgba(255,255,255,0.1) !important;
-    padding: 4px !important;
-}
-
-.edit-supply-btn:hover {
-    background: rgba(255,255,255,0.2) !important;
-}
-
-/* Table styles - LARGER TEXT */
+/* Table styles */
 .vessels-table-container {
     flex: 1;
     overflow-x: auto;
@@ -51,7 +20,7 @@
     min-width: 1000px;
 }
 
-/* Inverted table header - larger text */
+/* Inverted table header */
 .table-header-cell-inverted {
     font-weight: 700 !important;
     background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
@@ -62,29 +31,21 @@
     border-bottom: 1px solid rgba(255,255,255,0.1) !important;
 }
 
-/* Remove line breaks in headers */
 .table-header-cell-inverted br {
     display: none;
 }
 
-/* Table body cells - larger text */
+/* Table body cells */
 .table-body-cell {
-    font-size: 1rem !important;    /* 16px - standard body text size */
+    font-size: 1rem !important;
     padding: 10px 8px !important;
     border-bottom: 1px solid #f0f0f0 !important;
 }
 
-/* Empty cell styling - grey background for zero or empty values */
 .table-body-cell.empty-cell {
     color: #878787 !important;
     background-color: #ededed !important;
     font-style: italic;
-}
-
-/* Zero value cell */
-.table-body-cell.zero-cell {
-    color: #bbb !important;
-    background-color: #fafafa !important;
 }
 
 .unit-text {
@@ -110,117 +71,153 @@
     background: rgba(255,255,255,0.25) !important;
 }
 
-/* Cargo Section - Compact */
-.cargo-section-compact {
+/* ==================== CARGO SECTION - ULTRA COMPACT ==================== */
+.cargo-section-ultra-compact {
     background-color: #fafafa;
-    padding: 6px 12px;
-}
-
-.cargo-header-compact {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 2px 4px;
-    margin-bottom: 8px;
-}
-
-.cargo-title-compact {
-    font-weight: 700;
-    font-size: 0.7rem;
-    color: #333;
-    letter-spacing: 0.5px;
-}
-
-.add-cargo-compact {
-    padding: 2px !important;
-    color: #4caf50 !important;
+    padding: 0;
+    margin: 0;
 }
 
 .cargo-scroll-horizontal {
     display: flex;
     gap: 16px;
     overflow-x: auto;
-    padding-bottom: 4px;
+    padding: 4px 8px;
+    align-items: flex-end;
 }
 
-.cargo-date-group-compact {
+.cargo-scroll-horizontal::-webkit-scrollbar {
+    height: 3px;
+}
+
+/* Date group */
+.cargo-date-group-ultra {
     display: flex;
-    gap: 8px;
-    align-items: flex-start;
+    gap: 6px;
+    align-items: flex-end;
 }
 
-.cargo-date-vertical-compact {
+/* Date text - acts as separator */
+.cargo-date-vertical-ultra {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
     text-orientation: mixed;
-    background: #e0e0e0;
-    padding: 6px 3px;
-    border-radius: 3px;
-    font-size: 0.6rem;
-    font-weight: 600;
-    color: #333;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #666;
     text-align: center;
     white-space: nowrap;
+    height: auto;
+    border-right: 2px solid #ccc;
+    padding-right: 4px;
 }
 
-.cargo-vessels-row {
+/* Vessels row */
+.cargo-vessels-row-ultra {
     display: flex;
-    gap: 10px;
+    gap: 6px;
+    align-items: flex-end;
     flex-wrap: wrap;
 }
 
-.cargo-vessel-compact {
+/* Vessel card - aligned to bottom */
+.cargo-vessel-ultra {
     background: white;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    min-width: 120px;
-    overflow: hidden;
+    border-radius: 3px;
+    min-width: 130px;
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: bottom;
 }
 
-.cargo-containers-stack {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+/* Containers grid - horizontal columns of 2 rows each */
+.cargo-containers-grid-ultra {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
     padding: 6px;
     background: #f5f5f5;
-    min-height: 55px;
 }
 
-.cargo-container-stack-item {
+/* Each column has 2 rows */
+.cargo-container-column {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 60px;
+}
+
+/* Container item - wider */
+.cargo-container-stack-item-ultra {
     background: #e8e8e8;
-    border-radius: 3px;
+    border-radius: 2px;
     padding: 4px 6px;
     text-align: center;
     font-size: 0.6rem;
     font-weight: 500;
     color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 60px;
+    max-width: 80px;
 }
 
-.cargo-vessel-footer-compact {
+/* Vessel footer */
+.cargo-vessel-footer-ultra {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 8px;
+    padding: 2px 4px;
     background: white;
     border-top: 1px solid #e0e0e0;
 }
 
-.cargo-vessel-name-compact {
+.cargo-vessel-name-ultra {
     font-weight: 700;
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 55px;
 }
 
-.cargo-edit-compact {
-    padding: 2px !important;
+.cargo-edit-ultra {
+    padding: 1px !important;
     color: #666 !important;
 }
 
-.cargo-edit-compact:hover {
+.cargo-edit-ultra:hover {
     color: #1976d2 !important;
 }
 
-/* Edit Dialog Styles - with text inputs (not number) */
+/* Add Vessel button at the far right */
+.cargo-add-vessel-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 4px 8px;
+    background: #e8e8e8;
+    border-radius: 3px;
+}
+
+.cargo-add-vessel-btn {
+    background: transparent !important;
+    color: #4caf50 !important;
+    padding: 4px !important;
+}
+
+.cargo-add-vessel-btn:hover {
+    background: rgba(76, 175, 80, 0.1) !important;
+}
+
+/* Edit Dialog Styles */
 .supply-edit-list {
     display: flex;
     flex-direction: column;
@@ -268,7 +265,6 @@
     align-items: center;
 }
 
-/* Text field styling */
 .supply-edit-fields .MuiTextField-root {
     min-width: 100px;
 }
@@ -315,12 +311,31 @@
         padding: 6px 4px !important;
     }
     
-    .cargo-vessel-compact {
+    .cargo-vessel-ultra {
         min-width: 100px;
     }
     
-    .cargo-container-stack-item {
-        font-size: 0.55rem;
+    .cargo-vessel-name-ultra {
+        font-size: 0.5rem;
+        max-width: 45px;
+    }
+    
+    .cargo-container-stack-item-ultra {
+        font-size: 0.5rem;
+        min-width: 50px;
+        max-width: 60px;
         padding: 3px 4px;
     }
+    
+    .cargo-add-vessel-container {
+        padding: 2px 6px;
+    }
+}
+
+/* Add to SupplyVesselsTable.css */
+
+.cargo-container-stack-item-ultra.empty {
+    background: #f0f0f0;
+    color: #aaa;
+    font-style: italic;
 }

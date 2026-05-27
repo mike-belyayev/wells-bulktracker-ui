@@ -83,8 +83,6 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
                 setVessels([]);
             }
             
-            console.log('Well data loaded:', well.wellName);
-            console.log('Casing profile data:', well.casingProfile); // Debug log
             return well;
         } catch (err) {
             console.error('Failed to load well data:', err);

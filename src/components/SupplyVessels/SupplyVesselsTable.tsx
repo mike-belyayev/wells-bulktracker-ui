@@ -6,7 +6,7 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions, Typography
 } from '@mui/material';
 import { Edit, Add, Delete, Save, Cancel, ArrowUpward, ArrowDownward, ViewColumn } from '@mui/icons-material';
-import CargoVesselsSection from './CargoVesselsSection';
+import CargoVesselsSection, { type CargoVessel } from './CargoVesselsSection';
 import './SupplyVesselsTable.css';
 
 // Types
@@ -32,32 +32,104 @@ export interface DynamicColumn {
 
 export interface SupplyVesselsTableProps {
     vessels: SupplyVessel[];
+    cargoVessels?: CargoVessel[];
     wellId?: string;
     onVesselsChange: (vessels: SupplyVessel[]) => void;
+    onCargoUpdate?: (vessels: CargoVessel[]) => Promise<void>;
     onSave?: (vessel: SupplyVessel) => Promise<void>;
     onDelete?: (id: string) => Promise<void>;
     readOnly?: boolean;
 }
 
-// Date formatting helper
+// Date formatting helpers
 const formatDateToDisplay = (dateString: string): string => {
     if (!dateString) return '—';
     try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return dateString;
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = date.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
-        const year = String(date.getFullYear()).slice(-2);
-        return `${day}-${month}-${year}`;
+        let year: number, month: number, day: number;
+        
+        if (dateString.includes('T')) {
+            const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) {
+                year = parseInt(match[1]);
+                month = parseInt(match[2]) - 1;
+                day = parseInt(match[3]);
+            } else {
+                const date = new Date(dateString);
+                year = date.getFullYear();
+                month = date.getMonth();
+                day = date.getDate();
+            }
+        } else {
+            const date = new Date(dateString);
+            year = date.getFullYear();
+            month = date.getMonth();
+            day = date.getDate();
+        }
+        
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const displayDay = String(day).padStart(2, '0');
+        const displayMonth = monthNames[month];
+        const displayYear = String(year).slice(-2);
+        
+        return `${displayDay}-${displayMonth}-${displayYear}`;
     } catch {
         return dateString;
     }
 };
 
+const formatDateForInput = (dateString: string): string => {
+    if (!dateString) return '';
+    try {
+        const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
+        if (match) {
+            const monthMap: { [key: string]: string } = {
+                'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
+                'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
+                'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+            };
+            const month = monthMap[match[2].toUpperCase()];
+            if (month) {
+                const fullYear = `20${match[3]}`;
+                return `${fullYear}-${month}-${match[1]}`;
+            }
+        }
+        const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+            return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+        }
+    } catch (e) {
+        console.error('Date parsing error:', e);
+    }
+    return '';
+};
+
+const formatDateForSave = (dateString: string): string => {
+    if (!dateString) return '';
+    if (dateString.match(/^\d{2}-[A-Za-z]{3}-\d{2}$/)) {
+        return dateString;
+    }
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) {
+        const monthMap: { [key: string]: string } = {
+            '01': 'JAN', '02': 'FEB', '03': 'MAR', '04': 'APR',
+            '05': 'MAY', '06': 'JUN', '07': 'JUL', '08': 'AUG',
+            '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DEC'
+        };
+        const month = monthMap[match[2]];
+        if (month) {
+            const year = match[1].slice(-2);
+            return `${match[3]}-${month}-${year}`;
+        }
+    }
+    return dateString;
+};
+
 const SupplyVesselsTable = ({ 
     vessels, 
+    cargoVessels = [],  // Add cargoVessels prop with default empty array
     wellId,
     onVesselsChange, 
+    onCargoUpdate,      // Add onCargoUpdate prop
     onSave, 
     onDelete, 
     readOnly = false 
@@ -71,7 +143,6 @@ const SupplyVesselsTable = ({
     const [newColumnName, setNewColumnName] = useState('');
     const [newColumnUnit, setNewColumnUnit] = useState('');
 
-    // Load dynamic columns from existing vessels
     useEffect(() => {
         const allKeys = new Set<string>();
         vessels.forEach(vessel => {
@@ -135,7 +206,11 @@ const SupplyVesselsTable = ({
     const handleSaveEdit = () => {
         if (editingIndex !== null && editingData) {
             const updated = [...tempVessels];
-            updated[editingIndex] = { ...updated[editingIndex], ...editingData };
+            updated[editingIndex] = { 
+                ...updated[editingIndex], 
+                ...editingData,
+                crewChange: formatDateForSave(editingData.crewChange || '')
+            };
             setTempVessels(updated);
             setEditingIndex(null);
             setEditingData({});
@@ -202,7 +277,6 @@ const SupplyVesselsTable = ({
             };
             setDynamicColumns([...dynamicColumns, newColumn]);
             
-            // Add the new column to all vessels with empty value
             const updatedVessels = tempVessels.map(vessel => ({
                 ...vessel,
                 [newKey]: ''
@@ -218,11 +292,16 @@ const SupplyVesselsTable = ({
     return (
         <Paper className="vessels-panel" elevation={3}>
             {/* Cargo Vessels Section - on top */}
-            <CargoVesselsSection readOnly={readOnly} />
+            <CargoVesselsSection 
+                wellId={wellId}
+                readOnly={readOnly}
+                cargoVesselsData={cargoVessels}
+                onCargoUpdate={onCargoUpdate}
+            />
             
             <Divider />
             
-            {/* Supply Vessels Table - inverted header with edit button */}
+            {/* Supply Vessels Table */}
             <TableContainer className="vessels-table-container">
                 <Table stickyHeader size="small" className="vessels-table">
                     <TableHead>
@@ -251,40 +330,38 @@ const SupplyVesselsTable = ({
                         </TableRow>
                     </TableHead>
                     <TableBody>
-    {vessels.map((vessel, idx) => (
-        <TableRow key={vessel.id} hover>
-            <TableCell className="table-body-cell">{vessel.vessel}</TableCell>
-            <TableCell className="table-body-cell">{vessel.location || '—'}</TableCell>
-            <TableCell className="table-body-cell">{formatDateToDisplay(vessel.crewChange)}</TableCell>
-            
-            <TableCell className={`table-body-cell ${(!vessel.fuelOil || vessel.fuelOil === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.fuelOil || '—'}
-            </TableCell>
-            <TableCell className={`table-body-cell ${(!vessel.potWater || vessel.potWater === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.potWater || '—'}
-            </TableCell>
-            <TableCell className={`table-body-cell ${(!vessel.drlWater || vessel.drlWater === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.drlWater || '—'}
-            </TableCell>
-            <TableCell className={`table-body-cell ${(!vessel.barite || vessel.barite === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.barite || '—'}
-            </TableCell>
-            <TableCell className={`table-body-cell ${(!vessel.baseOil || vessel.baseOil === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.baseOil || '—'}
-            </TableCell>
-            <TableCell className={`table-body-cell ${(!vessel.cementG || vessel.cementG === 0) ? 'empty-cell' : ''}`} align="center">
-                {vessel.cementG || '—'}
-            </TableCell>
-            
-            {dynamicColumns.map(col => (
-                <TableCell key={col.key} className={`table-body-cell ${(!vessel[col.key]) ? 'empty-cell' : ''}`} align="center">
-                    {vessel[col.key] || '—'}
-                </TableCell>
-            ))}
-            {!readOnly && <TableCell className="table-body-cell" align="center"></TableCell>}
-        </TableRow>
-    ))}
-</TableBody>
+                        {vessels.map((vessel, idx) => (
+                            <TableRow key={vessel.id} hover>
+                                <TableCell className="table-body-cell">{vessel.vessel}</TableCell>
+                                <TableCell className="table-body-cell">{vessel.location || '—'}</TableCell>
+                                <TableCell className="table-body-cell">{formatDateToDisplay(vessel.crewChange)}</TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.fuelOil || vessel.fuelOil === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.fuelOil || '—'}
+                                </TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.potWater || vessel.potWater === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.potWater || '—'}
+                                </TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.drlWater || vessel.drlWater === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.drlWater || '—'}
+                                </TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.barite || vessel.barite === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.barite || '—'}
+                                </TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.baseOil || vessel.baseOil === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.baseOil || '—'}
+                                </TableCell>
+                                <TableCell className={`table-body-cell ${(!vessel.cementG || vessel.cementG === 0) ? 'empty-cell' : ''}`} align="center">
+                                    {vessel.cementG || '—'}
+                                </TableCell>
+                                {dynamicColumns.map(col => (
+                                    <TableCell key={col.key} className={`table-body-cell ${(!vessel[col.key]) ? 'empty-cell' : ''}`} align="center">
+                                        {vessel[col.key] || '—'}
+                                    </TableCell>
+                                ))}
+                                {!readOnly && <TableCell className="table-body-cell" align="center"></TableCell>}
+                            </TableRow>
+                        ))}
+                    </TableBody>
                 </Table>
             </TableContainer>
 
@@ -302,20 +379,17 @@ const SupplyVesselsTable = ({
                             <div key={vessel.id || idx} className="supply-edit-row">
                                 {editingIndex === idx ? (
                                     <div className="supply-edit-fields">
+                                        <TextField size="small" label="Vessel Name" value={editingData.vessel || ''} onChange={(e) => handleInputChange('vessel', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Location" value={editingData.location || ''} onChange={(e) => handleInputChange('location', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Crew Change" type="date" value={formatDateForInput(editingData.crewChange || '')} onChange={(e) => handleInputChange('crewChange', e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
                                         <TextField size="small" label="Fuel Oil" type="text" value={editingData.fuelOil || ''} onChange={(e) => handleInputChange('fuelOil', e.target.value)} fullWidth />
-<TextField size="small" label="Pot Water" type="text" value={editingData.potWater || ''} onChange={(e) => handleInputChange('potWater', e.target.value)} fullWidth />
-<TextField size="small" label="Drl Water" type="text" value={editingData.drlWater || ''} onChange={(e) => handleInputChange('drlWater', e.target.value)} fullWidth />
-<TextField size="small" label="Barite" type="text" value={editingData.barite || ''} onChange={(e) => handleInputChange('barite', e.target.value)} fullWidth />
-<TextField size="small" label="Base Oil" type="text" value={editingData.baseOil || ''} onChange={(e) => handleInputChange('baseOil', e.target.value)} fullWidth />
-<TextField size="small" label="Cement G" type="text" value={editingData.cementG || ''} onChange={(e) => handleInputChange('cementG', e.target.value)} fullWidth />  {dynamicColumns.map(col => (
-                                            <TextField
-                                                key={col.key}
-                                                size="small"
-                                                label={col.name}
-                                                value={editingData[col.key] || ''}
-                                                onChange={(e) => handleInputChange(col.key, e.target.value)}
-                                                fullWidth
-                                            />
+                                        <TextField size="small" label="Pot Water" type="text" value={editingData.potWater || ''} onChange={(e) => handleInputChange('potWater', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Drl Water" type="text" value={editingData.drlWater || ''} onChange={(e) => handleInputChange('drlWater', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Barite" type="text" value={editingData.barite || ''} onChange={(e) => handleInputChange('barite', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Base Oil" type="text" value={editingData.baseOil || ''} onChange={(e) => handleInputChange('baseOil', e.target.value)} fullWidth />
+                                        <TextField size="small" label="Cement G" type="text" value={editingData.cementG || ''} onChange={(e) => handleInputChange('cementG', e.target.value)} fullWidth />
+                                        {dynamicColumns.map(col => (
+                                            <TextField key={col.key} size="small" label={col.name} value={editingData[col.key] || ''} onChange={(e) => handleInputChange(col.key, e.target.value)} fullWidth />
                                         ))}
                                         <div className="edit-actions">
                                             <IconButton onClick={handleSaveEdit} color="primary"><Save /></IconButton>

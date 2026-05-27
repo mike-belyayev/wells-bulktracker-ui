@@ -34,7 +34,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('token');
-        console.log('Retrieved token:', token);
         
         if (!token) {
           console.log('No token available - logging out');
@@ -49,8 +48,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         });
 
-        console.log('Auth check response status:', response.status);
-        
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           console.error('Auth check failed:', response.status, errorData);
@@ -59,7 +56,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const userData = await response.json();
-        console.log('User data received:', userData);
         
         setUser({
           userName: userData.userName,
@@ -109,7 +105,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const data = await response.json();
-      console.log('Login response:', data);
 
       const authToken = data.token || 
                        (data.user?.tokens?.length > 0 ? data.user.tokens[0].token : null);

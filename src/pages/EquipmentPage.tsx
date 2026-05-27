@@ -5,7 +5,7 @@ import { Settings, Dashboard, Refresh, ExitToApp, ContentCopy } from '@mui/icons
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, BOPSystems } from '../components/Dashboard';
-import { SupplyVesselsTable } from '../components/SupplyVessels';
+import { SupplyVesselsTable, type SupplyVessel, type CargoVessel } from '../components/SupplyVessels';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { useWellData } from '../hooks/useWellData';
 import { useWellOperations } from '../hooks/useWellOperations';
@@ -33,25 +33,30 @@ const EquipmentPage = () => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-const {
-    loading,
-    currentWellId,
-    vessels,
-    lastUpdated,
-    wellData,
-    fluidData,
-    bopSystemsData,
-    mudPumpLinersData,
-    setVessels,
-    setWellData,
-    setFluidData,
-    setBopSystemsData,
-    setMudPumpLinersData,
-    loadWellData,
-    refreshWellData,
-    updateLastUpdated,
-    clearWellData  // Add this
-} = useWellData(showSnackbar);
+    // Well data hook
+    const {
+        loading,
+        currentWellId,
+        vessels,
+        lastUpdated,
+        wellData,
+        fluidData,
+        bopSystemsData,
+        mudPumpLinersData,
+        setVessels,
+        setWellData,
+        setFluidData,
+        setBopSystemsData,
+        setMudPumpLinersData,
+        setCurrentWellId,
+        loadWellData,
+        refreshWellData,
+        updateLastUpdated,
+        clearWellData
+    } = useWellData(showSnackbar);
+
+    // Cargo vessels state
+    const [cargoVessels, setCargoVessels] = useState<CargoVessel[]>([]);
 
     // Auto-refresh hook
     const { autoRefreshEnabled, countdown, formatCountdown, toggleAutoRefresh } = useAutoRefresh(
@@ -87,6 +92,22 @@ const {
         showSnackbar
     );
 
+    // Cargo vessels update handler
+    const handleCargoUpdate = useCallback(async (updatedVessels: CargoVessel[]) => {
+        if (currentWellId) {
+            try {
+                await wellApi.patchWell(currentWellId, { cargoVessels: updatedVessels });
+                setCargoVessels(updatedVessels);
+                updateLastUpdated();
+                showSnackbar('Cargo vessels updated', 'success');
+            } catch (err) {
+                console.error('Failed to update cargo vessels:', err);
+                showSnackbar('Failed to update cargo vessels', 'error');
+                throw err;
+            }
+        }
+    }, [currentWellId, updateLastUpdated, showSnackbar]);
+
     // Well selector hook
     const {
         allWells,
@@ -97,33 +118,36 @@ const {
         handleWellChange,
         handleCloneWell
     } = useWellSelector(userRig, async (wellId) => {
-        await loadWellData(wellId);
+        const well = await loadWellData(wellId);
+        // Load cargo vessels from well data
+        if (well && well.cargoVessels) {
+            setCargoVessels(well.cargoVessels);
+        } else {
+            setCargoVessels([]);
+        }
     }, showSnackbar);
 
-    // Delete well handler - MUST be defined AFTER hooks
-const handleDeleteWell = async () => {
-    if (currentWellId) {
-        try {
-            await wellApi.deleteWell(currentWellId);
-            showSnackbar('Well deleted successfully', 'success');
-            
-            // Refresh the wells list
-            const wells = await wellApi.getWellsByOwner(userRig);
-            if (wells.length > 0) {
-                const newWellId = wells[0]._id;
-                await loadWellData(newWellId);
-                // Update active well in site
-                await siteApi.setActiveWell(userRig, newWellId);
-            } else {
-                // No wells left, show empty state - use clearWellData
-                clearWellData();
+    // Delete well handler
+    const handleDeleteWell = async () => {
+        if (currentWellId) {
+            try {
+                await wellApi.deleteWell(currentWellId);
+                showSnackbar('Well deleted successfully', 'success');
+                
+                const wells = await wellApi.getWellsByOwner(userRig);
+                if (wells.length > 0) {
+                    const newWellId = wells[0]._id;
+                    await loadWellData(newWellId);
+                    await siteApi.setActiveWell(userRig, newWellId);
+                } else {
+                    clearWellData();
+                }
+            } catch (err) {
+                console.error('Failed to delete well:', err);
+                showSnackbar('Failed to delete well', 'error');
             }
-        } catch (err) {
-            console.error('Failed to delete well:', err);
-            showSnackbar('Failed to delete well', 'error');
         }
-    }
-};
+    };
 
     const handleRefresh = async () => {
         if (currentWellId) {
@@ -245,8 +269,10 @@ const handleDeleteWell = async () => {
                 <div className="bottom-section">
                     <SupplyVesselsTable
                         vessels={vessels}
+                        cargoVessels={cargoVessels}
                         wellId={currentWellId || undefined}
                         onVesselsChange={handleVesselsChange}
+                        onCargoUpdate={handleCargoUpdate}
                         onSave={handleSaveVessel}
                         onDelete={handleDeleteVessel}
                         readOnly={!isAdmin}

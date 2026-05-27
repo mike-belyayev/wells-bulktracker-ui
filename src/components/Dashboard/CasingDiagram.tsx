@@ -8,13 +8,16 @@ interface CasingDiagramProps {
     profiles: CasingProfile[];
     onEdit: () => void;
     readOnly?: boolean;
+    containerHeight?: number;  // Add this prop
 }
 
-const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProps) => {
+const CasingDiagram = ({ profiles, onEdit, readOnly = false, containerHeight = 300 }: CasingDiagramProps) => {
+    const diagramHeight = Math.max(200, containerHeight);
+    
     if (profiles.length === 0) {
         return (
             <div className="casing-diagram-container">
-                <div className="diagram-wrapper">
+                <div className="diagram-wrapper" style={{ minHeight: `${diagramHeight}px` }}>
                     <div className="empty-diagram">
                         <Typography variant="body2" color="textSecondary">
                             No casing profiles defined.
@@ -36,15 +39,12 @@ const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProp
     }
     
     // Keep original order: shallowest at top, deepest at bottom
-    // But offset: bottom (deepest) gets 0px, each higher gets +12px offset to the right
     const orderedProfiles = [...profiles];
-    
-    // Calculate offset based on position from bottom
     const total = orderedProfiles.length;
     
     return (
         <div className="casing-diagram-container">
-            <div className="diagram-wrapper">
+            <div className="diagram-wrapper" style={{ minHeight: `${diagramHeight}px` }}>
                 {/* Edit button at top right */}
                 {!readOnly && (
                     <IconButton 

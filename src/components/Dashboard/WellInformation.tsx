@@ -1,4 +1,4 @@
-// src/components/Dashboard/WellInformation.tsx - Simplified version
+// src/components/Dashboard/WellInformation.tsx
 import { Paper, Typography, Divider, IconButton, TextField, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress } from '@mui/material';
 import { Edit, Delete, Warning } from '@mui/icons-material';
 import { useEffect, useRef, useState } from 'react';
@@ -25,18 +25,17 @@ export interface WellInformationProps {
 
 const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [, setContainerHeight] = useState(300);
+    const [containerHeight, setContainerHeight] = useState(300);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
     
-    const [editData, setEditData] = useState({
-        wellName: '',
-        waterDepth: 0,
-        airGap: 0,
-        HPWH: 0
-    });
+    // Edit data - computed on the fly, not stored in state
+    const [editWellName, setEditWellName] = useState('');
+    const [editWaterDepth, setEditWaterDepth] = useState(0);
+    const [editAirGap, setEditAirGap] = useState(0);
+    const [editHPWH, setEditHPWH] = useState(0);
 
     const data = wellData || { wellName: '', waterDepth: 0, airGap: 0, HPWH: 0, casingProfile: [] };
     const casingProfiles: CasingProfile[] = (data.casingProfile || []).map((p, idx) => ({ 
@@ -56,28 +55,27 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
         return () => window.removeEventListener('resize', updateHeight);
     }, [casingProfiles.length]);
 
-    useEffect(() => {
-        if (data) {
-            setEditData({
-                wellName: data.wellName || '',
-                waterDepth: data.waterDepth || 0,
-                airGap: data.airGap || 0,
-                HPWH: (data as any).HPWH || 0
-            });
-        }
-    }, [data]);
+    const handleEditClick = () => {
+        // Set edit data directly when opening dialog
+        setEditWellName(data.wellName || '');
+        setEditWaterDepth(data.waterDepth || 0);
+        setEditAirGap(data.airGap || 0);
+        setEditHPWH((data as any).HPWH || 0);
+        setEditDialogOpen(true);
+    };
 
-    const handleEditClick = () => setEditDialogOpen(true);
-    const handleEditClose = () => setEditDialogOpen(false);
+    const handleEditClose = () => {
+        setEditDialogOpen(false);
+    };
 
     const handleEditSave = async () => {
         if (onUpdate && wellId) {
             try {
                 await onUpdate({
-                    wellName: editData.wellName,
-                    waterDepth: editData.waterDepth,
-                    airGap: editData.airGap,
-                    HPWH: editData.HPWH
+                    wellName: editWellName,
+                    waterDepth: editWaterDepth,
+                    airGap: editAirGap,
+                    HPWH: editHPWH
                 });
                 setEditDialogOpen(false);
                 if (onRefresh) await onRefresh();
@@ -88,7 +86,20 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
     };
 
     const handleInputChange = (field: string, value: string | number) => {
-        setEditData({ ...editData, [field]: value });
+        switch (field) {
+            case 'wellName':
+                setEditWellName(value as string);
+                break;
+            case 'waterDepth':
+                setEditWaterDepth(value as number);
+                break;
+            case 'airGap':
+                setEditAirGap(value as number);
+                break;
+            case 'HPWH':
+                setEditHPWH(value as number);
+                break;
+        }
     };
 
     const handleDeleteClick = () => {
@@ -141,23 +152,24 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                 {/* 3-Value Table */}
                 <div className="metrics-table">
                     <div className="metrics-header">
-                        <span className="metric-header-cell">Water Depth (m)</span>
-                        <span className="metric-header-cell">Air Gap (m)</span>
-                        <span className="metric-header-cell">HPWH Dat. (m)</span>
+                        <span className="metric-header-cell">Water Depth</span>
+                        <span className="metric-header-cell">Air Gap</span>
+                        <span className="metric-header-cell">HPWH</span>
                     </div>
                     <div className="metrics-values">
-                        <span className="metric-value-cell">{data.waterDepth || 0}</span>
-                        <span className="metric-value-cell">{data.airGap || 0}</span>
-                        <span className="metric-value-cell">{(data as any).HPWH || 0}</span>
+                        <span className="metric-value-cell">{data.waterDepth || 0} m</span>
+                        <span className="metric-value-cell">{data.airGap || 0} m</span>
+                        <span className="metric-value-cell">{(data as any).HPWH || 0} m</span>
                     </div>
                 </div>
 
                 {/* Casing Profile Diagram */}
-<CasingDiagram
-    profiles={casingProfiles}
-    onEdit={() => setCasingDialogOpen(true)}
-    readOnly={readOnly}
-/>
+                <CasingDiagram
+                    profiles={casingProfiles}
+                    onEdit={() => setCasingDialogOpen(true)}
+                    readOnly={readOnly}
+                    containerHeight={containerHeight}
+                />
             </div>
 
             {/* Edit Well Info Dialog */}
@@ -169,7 +181,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                         margin="dense"
                         label="Well Name"
                         fullWidth
-                        value={editData.wellName}
+                        value={editWellName}
                         onChange={(e) => handleInputChange('wellName', e.target.value)}
                     />
                     <TextField
@@ -177,7 +189,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                         label="Water Depth (m)"
                         type="number"
                         fullWidth
-                        value={editData.waterDepth}
+                        value={editWaterDepth}
                         onChange={(e) => handleInputChange('waterDepth', parseFloat(e.target.value) || 0)}
                     />
                     <TextField
@@ -185,7 +197,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                         label="Air Gap (m)"
                         type="number"
                         fullWidth
-                        value={editData.airGap}
+                        value={editAirGap}
                         onChange={(e) => handleInputChange('airGap', parseFloat(e.target.value) || 0)}
                     />
                     <TextField
@@ -193,7 +205,7 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                         label="HPWH (m)"
                         type="number"
                         fullWidth
-                        value={editData.HPWH}
+                        value={editHPWH}
                         onChange={(e) => handleInputChange('HPWH', parseFloat(e.target.value) || 0)}
                     />
                 </DialogContent>
