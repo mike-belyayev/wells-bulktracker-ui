@@ -37,8 +37,8 @@
 
 /* Table body cells */
 .table-body-cell {
-    font-size: 1rem !important;
-    padding: 10px 8px !important;
+    font-size: 0.9rem !important;
+    padding: 2px 4px !important;
     border-bottom: 1px solid #f0f0f0 !important;
 }
 
@@ -58,7 +58,7 @@
 .actions-header-cell {
     width: 50px;
     text-align: center;
-    padding: 8px 4px !important;
+    padding: 0 !important;
 }
 
 .edit-table-icon {
