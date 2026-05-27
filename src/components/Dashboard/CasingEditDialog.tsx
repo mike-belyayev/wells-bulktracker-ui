@@ -1,6 +1,6 @@
 // src/components/Dashboard/CasingEditDialog.tsx
 import { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton, MenuItem, Select, FormControl, InputLabel, Typography, Box } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, IconButton, MenuItem, Select, FormControl, InputLabel, Typography } from '@mui/material';
 import { Add, Delete, Edit as EditIcon, Save, Cancel, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import type { CasingProfile } from '../../utils/casingDiagramUtils';
 
