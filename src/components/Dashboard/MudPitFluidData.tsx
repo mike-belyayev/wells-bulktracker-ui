@@ -1,5 +1,5 @@
 // src/components/Dashboard/MudPitFluidData.tsx
-import { Paper, Typography, Divider, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import { Paper, Typography, Divider, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import './MudPitFluidData.css';
@@ -17,13 +17,14 @@ export interface PitValue {
 }
 
 export interface PitData {
-    _id?: string;
+    id?: string;
     pitName: string;
     pitGroup?: string;
     order: number;
     values: PitValue[];
 }
 
+// Group colors
 const GROUP_COLORS = [
     { name: 'None', value: '', bg: '#ffffff', border: '#e0e0e0' },
     { name: 'Light Yellow', value: 'yellow', bg: '#FFF9C4', border: '#F9A825' },
@@ -34,25 +35,15 @@ const GROUP_COLORS = [
     { name: 'Light Pink', value: 'pink', bg: '#F8BBD0', border: '#D81B60' },
     { name: 'Light Brown', value: 'brown', bg: '#D7CCC8', border: '#795548' },
     { name: 'Light Cyan', value: 'cyan', bg: '#B2EBF2', border: '#00838F' },
-    { name: 'Light Lime', value: 'lime', bg: '#F0F4C3', border: '#827717' },
 ];
 
-const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
+const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
     const [pits, setPits] = useState<PitData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [tempPits, setTempPits] = useState<PitData[]>([]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingData, setEditingData] = useState<PitData | null>(null);
-    const [newValueName, setNewValueName] = useState('');
-
-    // Add Pit Dialog
-    const [addDialogOpen, setAddDialogOpen] = useState(false);
-    const [newPitName, setNewPitName] = useState('');
-    const [newPitGroup, setNewPitGroup] = useState('');
-    const [newPitValues, setNewPitValues] = useState<PitValue[]>([
-        { valueName: 'Fluid', value: '' },
-        { valueName: 'Weight', value: '' },
-        { valueName: 'Vol. (bbl)', value: '' }
-    ]);
 
     useEffect(() => {
         if (fluidData && fluidData.length > 0) {
@@ -65,178 +56,119 @@ const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidD
         }
     }, [fluidData]);
 
-    const getColorForGroup = (groupName?: string): { bg: string; border: string } => {
-        if (!groupName) return { bg: '#ffffff', border: '#e0e0e0' };
-        const color = GROUP_COLORS.find(c => c.value === groupName);
-        return color ? { bg: color.bg, border: color.border } : { bg: '#ffffff', border: '#e0e0e0' };
+    const handleEditClick = () => {
+        setTempPits(JSON.parse(JSON.stringify(pits)));
+        setEditingIndex(null);
+        setEditDialogOpen(true);
     };
 
-    const handleEdit = (index: number) => {
+    const handleCloseDialog = () => {
+        setEditDialogOpen(false);
+        setEditingIndex(null);
+        setEditingData(null);
+    };
+
+    const handleSavePits = async () => {
+        if (onUpdate) {
+            const pitsToSave = tempPits.map((p, idx) => ({ ...p, order: idx }));
+            await onUpdate(pitsToSave);
+            setPits(pitsToSave);
+            handleCloseDialog();
+        }
+    };
+
+    const handleEditPit = (index: number) => {
         setEditingIndex(index);
-        setEditingData(JSON.parse(JSON.stringify(pits[index])));
-        setNewValueName('');
+        setEditingData({ ...tempPits[index] });
     };
 
     const handleCancelEdit = () => {
         setEditingIndex(null);
         setEditingData(null);
-        setNewValueName('');
     };
 
-    const handleSaveEdit = async () => {
-        if (editingIndex !== null && editingData && onUpdate) {
-            const updatedPits = [...pits];
-            updatedPits[editingIndex] = editingData;
-            updatedPits.forEach((pit, idx) => { pit.order = idx; });
-            setPits(updatedPits);
-            await onUpdate(updatedPits);
+    const handleSaveEdit = () => {
+        if (editingIndex !== null && editingData) {
+            const updated = [...tempPits];
+            updated[editingIndex] = editingData;
+            setTempPits(updated);
             setEditingIndex(null);
             setEditingData(null);
-            setNewValueName('');
         }
     };
 
-    const handleValueChange = (valueName: string, newValue: string) => {
+    const handleInputChange = (field: keyof PitData, value: string | PitValue[]) => {
         if (editingData) {
-            setEditingData({
-                ...editingData,
-                values: editingData.values.map(v => 
-                    v.valueName === valueName ? { ...v, value: newValue } : v
-                )
-            });
+            setEditingData({ ...editingData, [field]: value });
         }
     };
 
-    const handleGroupChange = (groupValue: string) => {
+    const handleValueChange = (valueIndex: number, newValue: string) => {
         if (editingData) {
-            setEditingData({
-                ...editingData,
-                pitGroup: groupValue === '' ? undefined : groupValue
-            });
+            const updatedValues = [...editingData.values];
+            updatedValues[valueIndex] = { ...updatedValues[valueIndex], value: newValue };
+            setEditingData({ ...editingData, values: updatedValues });
         }
     };
 
-    const handleNameChange = (newName: string) => {
+    const handleAddValue = () => {
         if (editingData) {
-            setEditingData({
-                ...editingData,
-                pitName: newName
-            });
+            const newValue: PitValue = { valueName: 'New Field', value: '' };
+            setEditingData({ ...editingData, values: [...editingData.values, newValue] });
         }
     };
 
-    const handleAddCustomField = () => {
-        if (editingData && newValueName.trim()) {
-            const newValue: PitValue = { valueName: newValueName.trim(), value: '' };
-            setEditingData({
-                ...editingData,
-                values: [...editingData.values, newValue]
-            });
-            setNewValueName('');
-        }
-    };
-
-    const handleRemoveValue = (valueName: string) => {
+    const handleRemoveValue = (valueIndex: number) => {
         if (editingData) {
-            setEditingData({
-                ...editingData,
-                values: editingData.values.filter(v => v.valueName !== valueName)
-            });
+            const updatedValues = editingData.values.filter((_, i) => i !== valueIndex);
+            setEditingData({ ...editingData, values: updatedValues });
         }
     };
 
-    const movePitUp = async (index: number) => {
-        if (index <= 0) return;
-        
-        const newPits = [...pits];
-        [newPits[index - 1], newPits[index]] = [newPits[index], newPits[index - 1]];
-        newPits.forEach((pit, idx) => { pit.order = idx; });
-        setPits(newPits);
-        
-        if (editingIndex === index) {
-            setEditingIndex(index - 1);
-            setEditingData(newPits[index - 1]);
-        } else if (editingIndex === index - 1) {
-            setEditingIndex(index);
-            setEditingData(newPits[index]);
-        }
-        
-        if (onUpdate) await onUpdate(newPits);
+    const handleAddPit = () => {
+        const newPit: PitData = {
+            id: Date.now().toString(),
+            pitName: 'New Pit',
+            order: tempPits.length,
+            values: [
+                { valueName: 'Fluid', value: '' },
+                { valueName: 'Weight', value: '' },
+                { valueName: 'Vol. (bbl)', value: '' }
+            ]
+        };
+        setTempPits([...tempPits, newPit]);
+        setEditingIndex(tempPits.length);
+        setEditingData(newPit);
     };
 
-    const movePitDown = async (index: number) => {
-        if (index >= pits.length - 1) return;
-        
-        const newPits = [...pits];
-        [newPits[index + 1], newPits[index]] = [newPits[index], newPits[index + 1]];
-        newPits.forEach((pit, idx) => { pit.order = idx; });
-        setPits(newPits);
-        
-        if (editingIndex === index) {
-            setEditingIndex(index + 1);
-            setEditingData(newPits[index + 1]);
-        } else if (editingIndex === index + 1) {
-            setEditingIndex(index);
-            setEditingData(newPits[index]);
-        }
-        
-        if (onUpdate) await onUpdate(newPits);
-    };
-
-    const handleDeletePit = async (index: number) => {
+    const handleDeletePit = (index: number) => {
         if (window.confirm('Are you sure you want to delete this pit?')) {
-            const updatedPits = pits.filter((_, i) => i !== index);
-            updatedPits.forEach((pit, idx) => { pit.order = idx; });
-            setPits(updatedPits);
-            
-            if (onUpdate) await onUpdate(updatedPits);
-            
+            const updated = tempPits.filter((_, i) => i !== index);
+            setTempPits(updated);
             if (editingIndex === index) {
                 setEditingIndex(null);
                 setEditingData(null);
-            } else if (editingIndex !== null && editingIndex > index) {
-                setEditingIndex(editingIndex - 1);
             }
         }
     };
 
-    const handleAddPit = async () => {
-        if (newPitName.trim() && onUpdate) {
-            const newPit: PitData = {
-                pitName: newPitName.trim(),
-                pitGroup: newPitGroup === '' ? undefined : newPitGroup,
-                order: pits.length,
-                values: newPitValues.filter(v => v.valueName.trim() && v.valueName !== '')
-            };
-            const updatedPits = [...pits, newPit];
-            updatedPits.forEach((pit, idx) => { pit.order = idx; });
-            setPits(updatedPits);
-            await onUpdate(updatedPits);
-            
-            setAddDialogOpen(false);
-            setNewPitName('');
-            setNewPitGroup('');
-            setNewPitValues([
-                { valueName: 'Fluid', value: '' },
-                { valueName: 'Weight', value: '' },
-                { valueName: 'Vol. (bbl)', value: '' }
-            ]);
-        }
+    const movePitUp = (index: number) => {
+        if (index === 0) return;
+        const newPits = [...tempPits];
+        [newPits[index - 1], newPits[index]] = [newPits[index], newPits[index - 1]];
+        setTempPits(newPits);
     };
 
-    const handleAddNewPitValue = (index: number, field: 'valueName' | 'value', value: string) => {
-        const updated = [...newPitValues];
-        updated[index][field] = value;
-        setNewPitValues(updated);
+    const movePitDown = (index: number) => {
+        if (index === tempPits.length - 1) return;
+        const newPits = [...tempPits];
+        [newPits[index + 1], newPits[index]] = [newPits[index], newPits[index + 1]];
+        setTempPits(newPits);
     };
 
-    const handleAddNewValueField = () => {
-        setNewPitValues([...newPitValues, { valueName: '', value: '' }]);
-    };
-
-    const handleRemoveNewValueField = (index: number) => {
-        const updated = newPitValues.filter((_, i) => i !== index);
-        setNewPitValues(updated);
+    const getGroupColor = (groupName?: string) => {
+        const color = GROUP_COLORS.find(c => c.value === groupName);
+        return color || GROUP_COLORS[0];
     };
 
     if (loading) {
@@ -253,122 +185,173 @@ const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidD
         );
     }
 
-    const renderPitCard = (pit: PitData, index: number) => {
-        const isEditing = editingIndex === index;
-        const colors = getColorForGroup(pit.pitGroup);
-        
-        return (
-            <div key={`pit_${index}_${pit.pitName}`} className="pit-card" style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
-                <div className="pit-header">
-                    <Typography className="pit-name">{pit.pitName}</Typography>
-                    {!readOnly && !isEditing && (
-                        <IconButton size="small" onClick={() => handleEdit(index)} className="pit-edit-btn">
-                            <Edit fontSize="small" />
-                        </IconButton>
-                    )}
-                </div>
-                
-                {isEditing && editingData ? (
-                    <div className="pit-details editing">
-                        <div className="edit-row">
-                            <Typography className="edit-label">Name:</Typography>
-                            <input type="text" value={editingData.pitName} onChange={(e) => handleNameChange(e.target.value)} className="edit-input" />
-                        </div>
-                        
-                        <div className="edit-row">
-                            <Typography className="edit-label">Color:</Typography>
-                            <select value={editingData.pitGroup || ''} onChange={(e) => handleGroupChange(e.target.value)} className="edit-select">
-                                {GROUP_COLORS.map(color => (
-                                    <option key={color.value} value={color.value}>
-                                        {color.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        
-                        {editingData.values.map((val, idx) => (
-                            <div key={`val_${val.valueName}_${idx}`} className="value-row">
-                                <Typography className="value-label">{val.valueName}:</Typography>
-                                <input type="text" value={val.value} onChange={(e) => handleValueChange(val.valueName, e.target.value)} className="value-input" />
-                                <IconButton size="small" onClick={() => handleRemoveValue(val.valueName)} className="remove-value-btn">
-                                    <Delete fontSize="small" />
-                                </IconButton>
-                            </div>
-                        ))}
-                        
-                        <div className="add-field-row">
-                            <input type="text" value={newValueName} onChange={(e) => setNewValueName(e.target.value)} placeholder="New field name..." className="field-input" onKeyPress={(e) => e.key === 'Enter' && handleAddCustomField()} />
-                            <button onClick={handleAddCustomField} className="add-field-btn" disabled={!newValueName.trim()}>Add</button>
-                        </div>
-                        
-                        <div className="action-buttons">
-                            <Tooltip title="Move Up"><IconButton size="small" onClick={() => movePitUp(index)} disabled={index === 0}><ArrowUpward fontSize="small" /></IconButton></Tooltip>
-                            <Tooltip title="Move Down"><IconButton size="small" onClick={() => movePitDown(index)} disabled={index === pits.length - 1}><ArrowDownward fontSize="small" /></IconButton></Tooltip>
-                            <Tooltip title="Delete Pit"><IconButton size="small" onClick={() => handleDeletePit(index)} className="delete-btn"><Delete fontSize="small" /></IconButton></Tooltip>
-                            <IconButton size="small" onClick={handleSaveEdit} color="primary"><Save fontSize="small" /></IconButton>
-                            <IconButton size="small" onClick={handleCancelEdit} color="secondary"><Cancel fontSize="small" /></IconButton>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="pit-details">
-                        {pit.values.map((val, idx) => (
-                            <div key={`display_${val.valueName}_${idx}`} className="value-row">
-                                <Typography className="value-label">{val.valueName}:</Typography>
-                                <Typography className="value-text">{val.value || '—'}</Typography>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
         <Paper className="fluid-panel" elevation={3}>
             <div className="panel-header">
                 <Typography variant="h6" className="panel-title">MUD PIT CAPACITIES & FLUID DATA</Typography>
                 {!readOnly && (
-                    <IconButton size="small" onClick={() => setAddDialogOpen(true)} className="add-pit-btn" title="Add Pit">
-                        <Add fontSize="small" />
+                    <IconButton size="small" onClick={handleEditClick} className="add-pit-btn" title="Edit Mud Pits">
+                        <Edit fontSize="small" />
                     </IconButton>
                 )}
             </div>
             <Divider />
             <div className="fluid-content">
                 {pits.length === 0 ? (
-                    <div className="empty-state">No mud pits configured. Click the + button to add one.</div>
+                    <div className="empty-state">No mud pits configured. Click Edit to add pits.</div>
                 ) : (
                     <div className="continuous-grid">
-                        {pits.map((pit, idx) => renderPitCard(pit, idx))}
+                        {pits.map((pit, idx) => {
+                            const colors = getGroupColor(pit.pitGroup);
+                            return (
+                                <div key={pit.id || idx} className="pit-card" style={{ backgroundColor: colors.bg, borderColor: colors.border }}>
+                                    <div className="pit-header">
+                                        <Typography className="pit-name">{pit.pitName}</Typography>
+                                    </div>
+                                    <div className="pit-details">
+                                        {pit.values.map((val, vIdx) => (
+                                            <div key={vIdx} className="value-row">
+                                                <Typography className="value-label">{val.valueName}:</Typography>
+                                                <Typography className="value-text">{val.value || '—'}</Typography>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
-            {/* Add Pit Dialog */}
-            <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="md" fullWidth>
-                <DialogTitle>Add New Mud Pit</DialogTitle>
+            {/* Edit Mud Pits Dialog */}
+            <Dialog open={editDialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
+                <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>Edit Mud Pits</DialogTitle>
                 <DialogContent>
-                    <TextField margin="dense" label="Pit Name" fullWidth value={newPitName} onChange={(e) => setNewPitName(e.target.value)} required />
-                    
-                    <select value={newPitGroup} onChange={(e) => setNewPitGroup(e.target.value)} className="group-select-full" style={{ marginTop: 16, width: '100%', padding: 12 }}>
-                        {GROUP_COLORS.map(color => (
-                            <option key={color.value} value={color.value}>{color.name}</option>
+                    <div className="mudpit-edit-list">
+                        {tempPits.length === 0 && (
+                            <Typography variant="body2" color="textSecondary" sx={{ py: 4, textAlign: 'center' }}>
+                                No mud pits. Click "Add Pit" to create one.
+                            </Typography>
+                        )}
+                        {tempPits.map((pit, idx) => (
+                            <div key={pit.id || idx} className="mudpit-edit-row">
+                                {editingIndex === idx && editingData ? (
+                                    // Edit Mode
+                                    <div className="mudpit-edit-fields">
+                                        <div className="edit-section">
+                                            <TextField
+                                                size="medium"
+                                                label="Pit Name"
+                                                value={editingData.pitName}
+                                                onChange={(e) => handleInputChange('pitName', e.target.value)}
+                                                fullWidth
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="edit-section">
+                                            <FormControl size="medium" fullWidth>
+                                                <InputLabel>Group Color</InputLabel>
+                                                <Select
+                                                    value={editingData.pitGroup || ''}
+                                                    label="Group Color"
+                                                    onChange={(e) => handleInputChange('pitGroup', e.target.value)}
+                                                >
+                                                    {GROUP_COLORS.map(color => (
+                                                        <MenuItem key={color.value} value={color.value}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <div style={{ width: 20, height: 20, backgroundColor: color.bg, border: `1px solid ${color.border}`, borderRadius: 3 }} />
+                                                                {color.name}
+                                                            </div>
+                                                        </MenuItem>
+                                                    ))}
+                                                </Select>
+                                            </FormControl>
+                                        </div>
+                                        <div className="edit-values-section">
+                                            <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>Values:</Typography>
+                                            {editingData.values.map((val, vIdx) => (
+                                                <div key={vIdx} className="edit-value-row">
+                                                    <TextField
+                                                        size="small"
+                                                        label="Field Name"
+                                                        value={val.valueName}
+                                                        onChange={(e) => {
+                                                            const newValues = [...editingData.values];
+                                                            newValues[vIdx] = { ...newValues[vIdx], valueName: e.target.value };
+                                                            handleInputChange('values', newValues);
+                                                        }}
+                                                        sx={{ flex: 1 }}
+                                                    />
+                                                    <TextField
+                                                        size="small"
+                                                        label="Value"
+                                                        value={val.value}
+                                                        onChange={(e) => handleValueChange(vIdx, e.target.value)}
+                                                        sx={{ flex: 1 }}
+                                                    />
+                                                    <IconButton size="small" onClick={() => handleRemoveValue(vIdx)} color="error">
+                                                        <Delete fontSize="small" />
+                                                    </IconButton>
+                                                </div>
+                                            ))}
+                                            <Button size="small" startIcon={<Add />} onClick={handleAddValue} sx={{ mt: 1 }}>
+                                                Add Field
+                                            </Button>
+                                        </div>
+                                        <div className="edit-actions">
+                                            <IconButton size="medium" onClick={handleSaveEdit} color="primary">
+                                                <Save fontSize="medium" />
+                                            </IconButton>
+                                            <IconButton size="medium" onClick={handleCancelEdit} color="secondary">
+                                                <Cancel fontSize="medium" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // View Mode
+                                    <div className="mudpit-edit-row-content">
+                                        <div className="view-section">
+                                            <span className="pit-name-view">{pit.pitName}</span>
+                                        </div>
+                                        <div className="view-section">
+                                            <div className="color-indicator" style={{ backgroundColor: getGroupColor(pit.pitGroup).bg, border: `1px solid ${getGroupColor(pit.pitGroup).border}` }} />
+                                            <span className="pit-group-view">{pit.pitGroup || 'No Group'}</span>
+                                        </div>
+                                        <div className="view-values-section">
+                                            {pit.values.map((val, vIdx) => (
+                                                <span key={vIdx} className="pit-value-view">
+                                                    <strong>{val.valueName}:</strong> {val.value || '—'}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="view-actions">
+                                            <IconButton size="medium" onClick={() => movePitUp(idx)} disabled={idx === 0}>
+                                                <ArrowUpward fontSize="medium" />
+                                            </IconButton>
+                                            <IconButton size="medium" onClick={() => movePitDown(idx)} disabled={idx === tempPits.length - 1}>
+                                                <ArrowDownward fontSize="medium" />
+                                            </IconButton>
+                                            <IconButton size="medium" onClick={() => handleEditPit(idx)} color="primary">
+                                                <Edit fontSize="medium" />
+                                            </IconButton>
+                                            <IconButton size="medium" onClick={() => handleDeletePit(idx)} color="error">
+                                                <Delete fontSize="medium" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         ))}
-                    </select>
-                    
-                    <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>Values:</Typography>
-                    {newPitValues.map((val, idx) => (
-                        <div key={`new_val_${idx}`} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                            <TextField size="small" placeholder="Field name" value={val.valueName} onChange={(e) => handleAddNewPitValue(idx, 'valueName', e.target.value)} style={{ flex: 1 }} />
-                            <TextField size="small" placeholder="Value" value={val.value} onChange={(e) => handleAddNewPitValue(idx, 'value', e.target.value)} style={{ flex: 1 }} />
-                            <IconButton size="small" onClick={() => handleRemoveNewValueField(idx)} color="error"><Delete fontSize="small" /></IconButton>
-                        </div>
-                    ))}
-                    <Button size="small" startIcon={<Add />} onClick={handleAddNewValueField} style={{ marginTop: 8 }}>Add Field</Button>
+                    </div>
+                    <Button size="large" startIcon={<Add />} onClick={handleAddPit} variant="outlined" sx={{ mt: 2, textTransform: 'none' }}>
+                        Add Pit
+                    </Button>
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddPit} variant="contained" color="primary" disabled={!newPitName.trim()}>Add Pit</Button>
+                <DialogActions sx={{ p: 2, gap: 1 }}>
+                    <Button onClick={handleCloseDialog} size="large">Cancel</Button>
+                    <Button onClick={handleSavePits} variant="contained" color="primary" size="large">
+                        Save Changes
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Paper>

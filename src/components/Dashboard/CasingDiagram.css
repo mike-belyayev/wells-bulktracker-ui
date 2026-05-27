@@ -73,33 +73,33 @@
     flex-direction: column;
 }
 
-/* Vertical line */
+/* Vertical line - consistent width for all */
 .casing-vertical-line {
-    width: 2px;
+    width: 3px;
     height: 100%;
     background-color: #000;
 }
 
-/* Tip sticking to the right from the vertical line */
+/* Larger tip sticking to the right from the vertical line */
 .casing-line-tip {
     position: absolute;
-    bottom: -1px;
-    left: 2px;
+    bottom: -2px;
+    left: 3px;
     width: 0;
     height: 0;
-    border-left: 6px solid #000;
-    border-top: 4px solid transparent;
-    border-bottom: 4px solid transparent;
+    border-left: 10px solid #000;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
 }
 
-/* Liner styling */
+/* Liner styling - slightly different but still consistent */
 .casing-line-container.liner .casing-vertical-line {
-    background-color: #999;
-    width: 1.5px;
+    background-color: #666;
+    width: 3px;
 }
 
 .casing-line-container.liner .casing-line-tip {
-    border-left-color: #999;
+    border-left-color: #666;
 }
 
 /* Text container - positioned at bottom right */
@@ -146,11 +146,13 @@
 }
 
 .casing-row:hover .casing-vertical-line {
-    width: 3px;
+    width: 4px;
 }
 
 .casing-row:hover .casing-line-tip {
-    border-left-width: 8px;
+    border-left-width: 12px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
 }
 
 .casing-row:hover .casing-size {
@@ -176,10 +178,15 @@
         gap: 2px;
     }
     
+    .casing-vertical-line {
+        width: 2px;
+    }
+    
     .casing-line-tip {
-        border-left-width: 5px;
-        border-top: 3px solid transparent;
-        border-bottom: 3px solid transparent;
+        border-left-width: 7px;
+        border-top: 4px solid transparent;
+        border-bottom: 4px solid transparent;
+        left: 2px;
     }
 }
 
@@ -193,7 +200,7 @@
     }
     
     .casing-vertical-line {
-        width: 3px;
+        width: 4px;
     }
     
     .casing-text {
@@ -202,9 +209,10 @@
     }
     
     .casing-line-tip {
-        left: 3px;
-        border-left-width: 10px;
-        border-top: 6px solid transparent;
-        border-bottom: 6px solid transparent;
+        left: 4px;
+        border-left-width: 14px;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        bottom: -3px;
     }
 }

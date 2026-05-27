@@ -72,7 +72,6 @@ const CasingDiagram = ({ profiles, onEdit, readOnly = false }: CasingDiagramProp
                                     zIndex: total - idx
                                 }}
                             >
-                                {/* Dotted border at the bottom of each row (except last) */}
                                 {idx < total - 1 && <div className="casing-dotted-border" />}
                                 
                                 {/* Vertical line with tip sticking to the right */}

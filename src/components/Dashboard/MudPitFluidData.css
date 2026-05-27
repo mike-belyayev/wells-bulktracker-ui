@@ -26,9 +26,13 @@
 }
 
 .add-pit-btn {
-    color: white;
-    background: rgba(255,255,255,0.1);
-    padding: 4px;
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    padding: 4px !important;
+}
+
+.add-pit-btn:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
 }
 
 .fluid-content {
@@ -263,4 +267,158 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 0.9rem;
+}
+
+/* Add to MudPitFluidData.css - Edit Dialog Styles */
+
+.mudpit-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 16px 0;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.mudpit-edit-row {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+
+.mudpit-edit-row:hover {
+    background-color: #fafafa;
+    border-color: #bdbdbd;
+}
+
+/* Edit Mode Layout */
+.mudpit-edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.edit-section {
+    width: 100%;
+}
+
+.edit-values-section {
+    background-color: #f9f9f9;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.edit-value-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.edit-value-row:last-child {
+    margin-bottom: 0;
+}
+
+.edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+/* View Mode Layout */
+.mudpit-edit-row-content {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.view-section {
+    flex: 0 0 auto;
+    min-width: 120px;
+}
+
+.view-values-section {
+    flex: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+}
+
+.view-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.pit-name-view {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #1a1a2e;
+}
+
+.color-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.pit-group-view {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.pit-value-view {
+    font-size: 0.85rem;
+    color: #333;
+    background: #f0f0f0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.pit-value-view strong {
+    font-weight: 700;
+    color: #1976d2;
+}
+
+/* Scrollbar */
+.mudpit-edit-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mudpit-edit-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.mudpit-edit-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mudpit-edit-row-content {
+        flex-direction: column;
+    }
+    
+    .view-values-section {
+        width: 100%;
+    }
+    
+    .pit-value-view {
+        white-space: normal;
+    }
+    
+    .mudpit-edit-row {
+        padding: 12px;
+    }
 }
