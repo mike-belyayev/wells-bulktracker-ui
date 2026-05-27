@@ -31,7 +31,7 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
         waterDepth?: number;
         airGap?: number;
         HPWH?: number;
-        casingProfiles?: CasingProfile[];
+        casingProfile?: CasingProfile[];
     } | undefined>(undefined);
     const [fluidData, setFluidData] = useState<PitData[]>([]);
     const [bopSystemsData, setBopSystemsData] = useState<BopSystem[]>([]);
@@ -51,12 +51,13 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
                 setLastUpdated(formatLastUpdated(well.updatedAt));
             }
             
+            // IMPORTANT: Use casingProfile (singular) to match the API response
             setWellData({
                 wellName: well.wellName,
                 waterDepth: well.waterDepth ? Number(well.waterDepth) : undefined,
                 airGap: well.airGap ? Number(well.airGap) : undefined,
                 HPWH: well.HPWH ? Number(well.HPWH) : undefined,
-                casingProfiles: well.casingProfile || []
+                casingProfile: well.casingProfile || []  // This is the key - casingProfile, not casingProfiles
             });
             
             setFluidData(well.mudPits || []);
@@ -83,6 +84,7 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
             }
             
             console.log('Well data loaded:', well.wellName);
+            console.log('Casing profile data:', well.casingProfile); // Debug log
             return well;
         } catch (err) {
             console.error('Failed to load well data:', err);
@@ -102,6 +104,16 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
         }
     }, [loadWellData, showSnackbar]);
 
+    const clearWellData = useCallback(() => {
+        setCurrentWellId(null);
+        setWellData(undefined);
+        setVessels([]);
+        setFluidData([]);
+        setBopSystemsData([]);
+        setMudPumpLinersData([]);
+        setLastUpdated('');
+    }, []);
+
     return {
         loading,
         currentWellId,
@@ -116,8 +128,10 @@ export const useWellData = (showSnackbar?: (msg: string, severity: 'success' | '
         setFluidData,
         setBopSystemsData,
         setMudPumpLinersData,
+        setCurrentWellId,
         loadWellData,
         refreshWellData,
-        updateLastUpdated
+        updateLastUpdated,
+        clearWellData
     };
 };

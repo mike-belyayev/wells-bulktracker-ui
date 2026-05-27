@@ -10,7 +10,7 @@ export interface WellInformationProps {
         waterDepth?: number;
         airGap?: number;
         HPWH?: number;
-        casingProfiles?: CasingProfile[];
+        casingProfile?: CasingProfile[];
     };
     wellId?: string;
     onUpdate?: (data: any) => Promise<void>;
@@ -23,24 +23,21 @@ export interface WellInformationProps {
 export interface CasingProfile {
     index: number;
     size: string;
-    description?: string;
     type: 'casing' | 'liner';
-    depth: number;
-    startDepth?: number;
-    id?: string;
+    description?: string;
 }
 
 const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [scale, setScale] = useState(1);
-    const [containerHeight, setContainerHeight] = useState(500);
+    const [containerHeight, setContainerHeight] = useState(300);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [editingCasingIndex, setEditingCasingIndex] = useState<number | null>(null);
     const [editingCasingData, setEditingCasingData] = useState<Partial<CasingProfile>>({});
-    const [newCasing, setNewCasing] = useState<Partial<CasingProfile>>({ size: '', type: 'casing', depth: 0, description: '' });
+    const [tempCasingProfiles, setTempCasingProfiles] = useState<CasingProfile[]>([]);
     
     const [editData, setEditData] = useState({
         wellName: '',
@@ -49,40 +46,31 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
         HPWH: 0
     });
 
-    // Default mock data
-    const defaultWellData = {
-        wellName: "WELL B-07",
-        waterDepth: 1245,
-        airGap: 28,
-        HPWH: 350,
-        casingProfiles: [
-            { index: 0, size: "36\"", type: "casing" as const, depth: 120, description: "Conductor" },
-            { index: 1, size: "28\"", type: "casing" as const, depth: 450, description: "Surface" },
-            { index: 2, size: "22\"", type: "casing" as const, depth: 850, description: "Intermediate" },
-            { index: 3, size: "16\"", type: "casing" as const, depth: 1250, description: "Intermediate" },
-            { index: 4, size: "7\"", type: "liner" as const, depth: 1890, startDepth: 1250, description: "Production Liner" }
-        ]
-    };
-
-    const data = wellData || defaultWellData;
-    let casingProfiles: CasingProfile[] = (data.casingProfiles || defaultWellData.casingProfiles).map((p, idx) => ({ 
+    const data = wellData || { wellName: '', waterDepth: 0, airGap: 0, HPWH: 0, casingProfile: [] };
+    let casingProfiles: CasingProfile[] = (data.casingProfile || []).map((p, idx) => ({ 
         ...p, 
         index: idx,
         type: p.type as 'casing' | 'liner'
     }));
     
-    const sortedProfiles = [...casingProfiles].sort((a, b) => a.depth - b.depth);
-    const maxDepth = Math.max(...sortedProfiles.map(p => p.depth), 2000);
-
-    const getProfilePosition = (profile: CasingProfile) => {
-        const startPercent = ((profile.startDepth || 0) / maxDepth) * 100;
-        const endPercent = (profile.depth / maxDepth) * 100;
-        const heightPercent = endPercent - startPercent;
+    const sortedProfiles = [...casingProfiles].sort((a, b) => a.index - b.index);
+    
+    // Calculate positions for diagram
+    const totalHeight = 100;
+    const itemHeight = totalHeight / (sortedProfiles.length || 1);
+    
+    const getProfilePosition = (profile: CasingProfile, idx: number) => {
+        const isLiner = profile.type === 'liner';
+        const topPercent = idx * itemHeight;
+        const heightPercent = itemHeight;
+        
+        const adjustedTop = isLiner ? topPercent : 0;
+        const adjustedHeight = isLiner ? heightPercent : (idx + 1) * itemHeight;
         
         return {
-            top: `${startPercent}%`,
-            height: `${heightPercent}%`,
-            isLiner: profile.type === 'liner'
+            top: `${adjustedTop}%`,
+            height: `${adjustedHeight}%`,
+            isLiner
         };
     };
 
@@ -90,15 +78,13 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
         const updateScale = () => {
             if (containerRef.current) {
                 const height = containerRef.current.clientHeight;
-                setContainerHeight(height);
-                const newScale = Math.max(0.4, Math.min(1.0, height / 600));
-                setScale(newScale);
+                setContainerHeight(Math.max(200, height));
             }
         };
         updateScale();
         window.addEventListener('resize', updateScale);
         return () => window.removeEventListener('resize', updateScale);
-    }, []);
+    }, [casingProfiles.length]);
 
     useEffect(() => {
         if (data) {
@@ -155,9 +141,34 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
     };
 
     // Casing profile handlers
-    const handleCasingEdit = (index: number, profile: CasingProfile) => {
+    const handleOpenCasingDialog = () => {
+        setTempCasingProfiles(JSON.parse(JSON.stringify(casingProfiles)));
+        setEditingCasingIndex(null);
+        setCasingDialogOpen(true);
+    };
+
+    const handleCloseCasingDialog = () => {
+        setCasingDialogOpen(false);
+        setEditingCasingIndex(null);
+        setEditingCasingData({});
+    };
+
+    const handleSaveCasingProfiles = async () => {
+        if (onCasingUpdate) {
+            // Ensure all profiles have proper index
+            const profilesToSave = tempCasingProfiles.map((p, idx) => ({
+                ...p,
+                index: idx
+            }));
+            await onCasingUpdate(profilesToSave);
+            if (onRefresh) await onRefresh();
+            handleCloseCasingDialog();
+        }
+    };
+
+    const handleCasingEdit = (index: number) => {
         setEditingCasingIndex(index);
-        setEditingCasingData({ ...profile });
+        setEditingCasingData({ ...tempCasingProfiles[index] });
     };
 
     const handleCasingCancel = () => {
@@ -165,17 +176,15 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
         setEditingCasingData({});
     };
 
-    const handleCasingSave = async () => {
-        if (editingCasingIndex !== null && editingCasingData && onCasingUpdate) {
-            const updatedProfiles: CasingProfile[] = [...casingProfiles];
-            updatedProfiles[editingCasingIndex] = { 
-                ...updatedProfiles[editingCasingIndex], 
+    const handleCasingSaveEdit = () => {
+        if (editingCasingIndex !== null && editingCasingData) {
+            const updatedProfiles = [...tempCasingProfiles];
+            updatedProfiles[editingCasingIndex] = {
+                ...updatedProfiles[editingCasingIndex],
                 ...editingCasingData,
                 type: (editingCasingData.type as 'casing' | 'liner') || updatedProfiles[editingCasingIndex].type
             };
-            updatedProfiles.forEach((p, idx) => { p.index = idx; });
-            await onCasingUpdate(updatedProfiles);
-            if (onRefresh) await onRefresh();
+            setTempCasingProfiles(updatedProfiles);
             setEditingCasingIndex(null);
             setEditingCasingData({});
         }
@@ -185,58 +194,47 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
         setEditingCasingData({ ...editingCasingData, [field]: value });
     };
 
-    const handleAddCasing = async () => {
-        if (newCasing.size && onCasingUpdate) {
-            const newProfile: CasingProfile = {
-                index: casingProfiles.length,
-                size: newCasing.size,
-                type: (newCasing.type || 'casing') as 'casing' | 'liner',
-                depth: newCasing.depth || 0,
-                description: newCasing.description || '',
-                startDepth: newCasing.type === 'liner' ? (newCasing.startDepth || 0) : undefined
-            };
-            const updatedProfiles = [...casingProfiles, newProfile].sort((a, b) => a.depth - b.depth);
-            updatedProfiles.forEach((p, idx) => { p.index = idx; });
-            await onCasingUpdate(updatedProfiles);
-            if (onRefresh) await onRefresh();
-            setCasingDialogOpen(false);
-            setNewCasing({ size: '', type: 'casing', depth: 0, description: '' });
-        }
+    const handleAddCasing = () => {
+        const newProfile: CasingProfile = {
+            index: tempCasingProfiles.length,
+            size: '',
+            type: 'casing',
+            description: ''
+        };
+        setTempCasingProfiles([...tempCasingProfiles, newProfile]);
+        setEditingCasingIndex(tempCasingProfiles.length);
+        setEditingCasingData(newProfile);
     };
 
-    const handleDeleteCasing = async (index: number) => {
+    const handleDeleteCasing = (index: number) => {
         if (window.confirm('Are you sure you want to delete this casing profile?')) {
-            const updatedProfiles = casingProfiles.filter((_, i) => i !== index);
-            updatedProfiles.forEach((p, idx) => { p.index = idx; });
-            if (onCasingUpdate) await onCasingUpdate(updatedProfiles);
-            if (onRefresh) await onRefresh();
+            const updatedProfiles = tempCasingProfiles.filter((_, i) => i !== index);
+            setTempCasingProfiles(updatedProfiles);
+            if (editingCasingIndex === index) {
+                setEditingCasingIndex(null);
+                setEditingCasingData({});
+            }
         }
     };
 
-    const moveCasingUp = async (index: number) => {
+    const moveCasingUp = (index: number) => {
         if (index === 0) return;
-        const newProfiles = [...casingProfiles];
+        const newProfiles = [...tempCasingProfiles];
         [newProfiles[index - 1], newProfiles[index]] = [newProfiles[index], newProfiles[index - 1]];
-        newProfiles.forEach((p, idx) => { p.index = idx; });
-        if (onCasingUpdate) await onCasingUpdate(newProfiles);
-        if (onRefresh) await onRefresh();
+        setTempCasingProfiles(newProfiles);
     };
 
-    const moveCasingDown = async (index: number) => {
-        if (index === casingProfiles.length - 1) return;
-        const newProfiles = [...casingProfiles];
+    const moveCasingDown = (index: number) => {
+        if (index === tempCasingProfiles.length - 1) return;
+        const newProfiles = [...tempCasingProfiles];
         [newProfiles[index + 1], newProfiles[index]] = [newProfiles[index], newProfiles[index + 1]];
-        newProfiles.forEach((p, idx) => { p.index = idx; });
-        if (onCasingUpdate) await onCasingUpdate(newProfiles);
-        if (onRefresh) await onRefresh();
+        setTempCasingProfiles(newProfiles);
     };
 
     const lineWidth = Math.max(2, 2.5 * scale);
     const tipWidth = Math.max(10, 14 * scale);
     const labelLeftOffset = Math.max(12, 16 * scale);
     const labelPadding = Math.max(3, 5 * scale);
-    const horizontalSpacing = Math.max(18, 22 * scale);
-    const startLeft = Math.max(15, 20 * scale);
 
     return (
         <Paper className="info-panel" elevation={3}>
@@ -273,59 +271,74 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                     </div>
                 </div>
 
-                {/* Casing Profile Diagram */}
+                {/* Casing Profile Diagram with Edit Button at Bottom Right */}
                 <div className="casing-diagram-container">
-                    <div className="diagram-wrapper">
+                    <div className="diagram-wrapper" style={{ minHeight: `${Math.max(200, containerHeight * 0.45)}px` }}>
                         <div className="diagram-area">
-                            {sortedProfiles.map((profile, idx) => {
-                                const pos = getProfilePosition(profile);
-                                const leftPosition = startLeft + (idx * horizontalSpacing);
-                                
-                                return (
-                                    <div 
-                                        key={profile.id || idx}
-                                        className={`casing-string ${profile.type}`}
-                                        style={{
-                                            height: pos.height,
-                                            top: pos.top,
-                                            left: `${leftPosition}px`,
-                                        }}
-                                    >
-                                        <div className="casing-line" style={{ width: `${lineWidth}px` }} />
-                                        {profile.type === 'liner' && (
-                                            <div className="casing-top-flat" style={{
-                                                width: `${tipWidth}px`,
-                                                height: `${lineWidth * 2}px`,
-                                                top: `-${lineWidth}px`,
-                                                left: `-${lineWidth / 2}px`
+                            {sortedProfiles.length === 0 ? (
+                                <div className="empty-diagram">
+                                    <Typography variant="body2" color="textSecondary">
+                                        No casing profiles defined.
+                                    </Typography>
+                                </div>
+                            ) : (
+                                sortedProfiles.map((profile, idx) => {
+                                    const pos = getProfilePosition(profile, idx);
+                                    
+                                    return (
+                                        <div 
+                                            key={profile.index}
+                                            className={`casing-string ${profile.type}`}
+                                            style={{
+                                                height: pos.height,
+                                                top: pos.top,
+                                                left: `25px`,
+                                            }}
+                                        >
+                                            <div className="casing-line" style={{ width: `${lineWidth}px` }} />
+                                            {profile.type === 'liner' && (
+                                                <div className="casing-top-flat" style={{
+                                                    width: `${tipWidth}px`,
+                                                    height: `${lineWidth * 2}px`,
+                                                    top: `-${lineWidth}px`,
+                                                    left: `-${lineWidth / 2}px`
+                                                }} />
+                                            )}
+                                            <div className="casing-tip-shoe" style={{
+                                                borderLeft: `${tipWidth}px solid #000000`,
+                                                borderTop: `${tipWidth * 0.4}px solid transparent`,
+                                                borderBottom: `${tipWidth * 0.4}px solid transparent`,
+                                                bottom: `${-lineWidth}px`,
+                                                left: `${-lineWidth / 2}px`
                                             }} />
-                                        )}
-                                        <div className="casing-tip-shoe" style={{
-                                            borderLeft: `${tipWidth}px solid #000000`,
-                                            borderTop: `${tipWidth * 0.4}px solid transparent`,
-                                            borderBottom: `${tipWidth * 0.4}px solid transparent`,
-                                            bottom: `${-lineWidth}px`,
-                                            left: `${-lineWidth / 2}px`
-                                        }} />
-                                        <div className="casing-label" style={{
-                                            bottom: `${-lineWidth * 2}px`,
-                                            left: `${labelLeftOffset}px`,
-                                            padding: `${labelPadding * 0.5}px ${labelPadding}px`
-                                        }}>
-                                            <Typography variant="caption" className="casing-size">
-                                                {profile.size}
-                                            </Typography>
-                                            <Typography variant="caption" className="casing-depth">
-                                                {profile.depth}m
-                                            </Typography>
-                                            <Typography variant="caption" className="casing-type">
-                                                {profile.type}
-                                            </Typography>
+                                            <div className="casing-label" style={{
+                                                bottom: `${-lineWidth * 2}px`,
+                                                left: `${labelLeftOffset}px`,
+                                                padding: `${labelPadding * 0.5}px ${labelPadding}px`
+                                            }}>
+                                                <Typography variant="caption" className="casing-size">
+                                                    {profile.size}
+                                                </Typography>
+                                                <Typography variant="caption" className="casing-type">
+                                                    {profile.type}
+                                                </Typography>
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
+                        {/* Edit Button at Bottom Right */}
+                        {!readOnly && (
+                            <IconButton 
+                                size="small" 
+                                onClick={handleOpenCasingDialog} 
+                                className="casing-edit-bottom-btn"
+                                title="Edit Casing Profiles"
+                            >
+                                <Edit fontSize="small" />
+                            </IconButton>
+                        )}
                     </div>
                 </div>
             </div>
@@ -386,18 +399,9 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                         Are you sure you want to delete the well <strong>"{data.wellName}"</strong>?
                     </Typography>
                     <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-                        ⚠️ This will delete the ENTIRE WELL including:
+                        ⚠️ This will delete the ENTIRE WELL including all associated data.
                     </Typography>
-                    <ul style={{ marginTop: 4, marginBottom: 8 }}>
-                        <li>All well information</li>
-                        <li>All casing profiles</li>
-                        <li>All mud pits data</li>
-                        <li>All BOP systems data</li>
-                        <li>All mud pump liners data</li>
-                        <li>All supply vessels</li>
-                        <li>All cargo vessels</li>
-                    </ul>
-                    <Typography variant="body2" color="error" fontWeight="bold">
+                    <Typography variant="body2" color="error" fontWeight="bold" sx={{ mt: 1 }}>
                         This action cannot be undone!
                     </Typography>
                 </DialogContent>
@@ -418,12 +422,12 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
             </Dialog>
 
             {/* Edit Casing Profiles Dialog */}
-            <Dialog open={casingDialogOpen} onClose={() => setCasingDialogOpen(false)} maxWidth="md" fullWidth>
+            <Dialog open={casingDialogOpen} onClose={handleCloseCasingDialog} maxWidth="md" fullWidth>
                 <DialogTitle>Edit Casing Profiles</DialogTitle>
                 <DialogContent>
                     <div className="casing-edit-list">
-                        {casingProfiles.map((profile, idx) => (
-                            <div key={profile.id || idx} className="casing-edit-row">
+                        {tempCasingProfiles.map((profile, idx) => (
+                            <div key={idx} className="casing-edit-row">
                                 {editingCasingIndex === idx ? (
                                     <div className="casing-edit-fields">
                                         <TextField
@@ -431,9 +435,10 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                                             label="Size"
                                             value={editingCasingData.size || ''}
                                             onChange={(e) => handleCasingInputChange('size', e.target.value)}
-                                            sx={{ width: 80 }}
+                                            sx={{ width: 120 }}
+                                            autoFocus
                                         />
-                                        <FormControl size="small" sx={{ width: 100 }}>
+                                        <FormControl size="small" sx={{ width: 120 }}>
                                             <InputLabel>Type</InputLabel>
                                             <Select
                                                 value={editingCasingData.type || 'casing'}
@@ -446,90 +451,58 @@ const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete,
                                         </FormControl>
                                         <TextField
                                             size="small"
-                                            label="Depth (m)"
-                                            type="number"
-                                            value={editingCasingData.depth || 0}
-                                            onChange={(e) => handleCasingInputChange('depth', parseFloat(e.target.value) || 0)}
-                                            sx={{ width: 100 }}
-                                        />
-                                        <TextField
-                                            size="small"
                                             label="Description"
                                             value={editingCasingData.description || ''}
                                             onChange={(e) => handleCasingInputChange('description', e.target.value)}
-                                            sx={{ width: 120 }}
+                                            sx={{ width: 150 }}
                                         />
-                                        <IconButton size="small" onClick={() => moveCasingUp(idx)} disabled={idx === 0}>
-                                            <ArrowUpward fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={() => moveCasingDown(idx)} disabled={idx === casingProfiles.length - 1}>
-                                            <ArrowDownward fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={handleCasingSave} color="primary">
-                                            <Save fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={handleCasingCancel} color="secondary">
-                                            <Cancel fontSize="small" />
-                                        </IconButton>
+                                        <div className="casing-edit-actions">
+                                            <IconButton size="small" onClick={handleCasingSaveEdit} color="primary">
+                                                <Save fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={handleCasingCancel} color="secondary">
+                                                <Cancel fontSize="small" />
+                                            </IconButton>
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className="casing-edit-row-content">
-                                        <span className="casing-edit-size">{profile.size}</span>
+                                        <span className="casing-edit-size">{profile.size || '—'}</span>
                                         <span className="casing-edit-type">{profile.type}</span>
-                                        <span className="casing-edit-depth">{profile.depth}m</span>
                                         <span className="casing-edit-desc">{profile.description || '—'}</span>
-                                        <IconButton size="small" onClick={() => handleCasingEdit(idx, profile)} color="primary">
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                        <IconButton size="small" onClick={() => handleDeleteCasing(idx)} color="error">
-                                            <Delete fontSize="small" />
-                                        </IconButton>
+                                        <div className="casing-edit-actions">
+                                            <IconButton size="small" onClick={() => moveCasingUp(idx)} disabled={idx === 0}>
+                                                <ArrowUpward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => moveCasingDown(idx)} disabled={idx === tempCasingProfiles.length - 1}>
+                                                <ArrowDownward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleCasingEdit(idx)} color="primary">
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleDeleteCasing(idx)} color="error">
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         ))}
-                        <div className="casing-add-row">
-                            <TextField
-                                size="small"
-                                label="Size"
-                                value={newCasing.size}
-                                onChange={(e) => setNewCasing({ ...newCasing, size: e.target.value })}
-                                sx={{ width: 80 }}
-                            />
-                            <FormControl size="small" sx={{ width: 100 }}>
-                                <InputLabel>Type</InputLabel>
-                                <Select
-                                    value={newCasing.type || 'casing'}
-                                    label="Type"
-                                    onChange={(e) => setNewCasing({ ...newCasing, type: e.target.value as 'casing' | 'liner' })}
-                                >
-                                    <MenuItem value="casing">Casing</MenuItem>
-                                    <MenuItem value="liner">Liner</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <TextField
-                                size="small"
-                                label="Depth (m)"
-                                type="number"
-                                value={newCasing.depth}
-                                onChange={(e) => setNewCasing({ ...newCasing, depth: parseFloat(e.target.value) || 0 })}
-                                sx={{ width: 100 }}
-                            />
-                            <TextField
-                                size="small"
-                                label="Description"
-                                value={newCasing.description}
-                                onChange={(e) => setNewCasing({ ...newCasing, description: e.target.value })}
-                                sx={{ width: 120 }}
-                            />
-                            <IconButton size="small" onClick={handleAddCasing} color="primary">
-                                <Add fontSize="small" />
-                            </IconButton>
-                        </div>
                     </div>
+                    <Button
+                        size="small"
+                        startIcon={<Add />}
+                        onClick={handleAddCasing}
+                        className="add-casing-dialog-btn"
+                    >
+                        Add Casing/Liner
+                    </Button>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setCasingDialogOpen(false)}>Close</Button>
+                    <Button onClick={handleCloseCasingDialog}>Cancel</Button>
+                    <Button onClick={handleSaveCasingProfiles} variant="contained" color="primary">
+                        Save Changes
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Paper>

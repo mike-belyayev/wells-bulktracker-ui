@@ -34,24 +34,27 @@ const EquipmentPage = () => {
     };
 
     // Well data hook
-    const {
-        loading,
-        currentWellId,
-        vessels,
-        lastUpdated,
-        wellData,
-        fluidData,
-        bopSystemsData,
-        mudPumpLinersData,
-        setVessels,
-        setWellData,
-        setFluidData,
-        setBopSystemsData,
-        setMudPumpLinersData,
-        loadWellData,
-        refreshWellData,
-        updateLastUpdated
-    } = useWellData(showSnackbar);
+// In EquipmentPage.tsx, update the destructuring to include clearWellData
+const {
+    loading,
+    currentWellId,
+    vessels,
+    lastUpdated,
+    wellData,
+    fluidData,
+    bopSystemsData,
+    mudPumpLinersData,
+    setVessels,
+    setWellData,
+    setFluidData,
+    setBopSystemsData,
+    setMudPumpLinersData,
+    setCurrentWellId,  // Add this
+    loadWellData,
+    refreshWellData,
+    updateLastUpdated,
+    clearWellData  // Add this
+} = useWellData(showSnackbar);
 
     // Auto-refresh hook
     const { autoRefreshEnabled, countdown, formatCountdown, toggleAutoRefresh } = useAutoRefresh(
@@ -101,34 +104,29 @@ const EquipmentPage = () => {
     }, showSnackbar);
 
     // Delete well handler - MUST be defined AFTER hooks
-    const handleDeleteWell = async () => {
-        if (currentWellId) {
-            try {
-                await wellApi.deleteWell(currentWellId);
-                showSnackbar('Well deleted successfully', 'success');
-                
-                // Refresh the wells list
-                const wells = await wellApi.getWellsByOwner(userRig);
-                if (wells.length > 0) {
-                    const newWellId = wells[0]._id;
-                    await loadWellData(newWellId);
-                    // Update active well in site
-                    await siteApi.setActiveWell(userRig, newWellId);
-                } else {
-                    // No wells left, show empty state
-                    setCurrentWellId(null);
-                    setWellData(undefined);
-                    setVessels([]);
-                    setFluidData([]);
-                    setBopSystemsData([]);
-                    setMudPumpLinersData([]);
-                }
-            } catch (err) {
-                console.error('Failed to delete well:', err);
-                showSnackbar('Failed to delete well', 'error');
+const handleDeleteWell = async () => {
+    if (currentWellId) {
+        try {
+            await wellApi.deleteWell(currentWellId);
+            showSnackbar('Well deleted successfully', 'success');
+            
+            // Refresh the wells list
+            const wells = await wellApi.getWellsByOwner(userRig);
+            if (wells.length > 0) {
+                const newWellId = wells[0]._id;
+                await loadWellData(newWellId);
+                // Update active well in site
+                await siteApi.setActiveWell(userRig, newWellId);
+            } else {
+                // No wells left, show empty state - use clearWellData
+                clearWellData();
             }
+        } catch (err) {
+            console.error('Failed to delete well:', err);
+            showSnackbar('Failed to delete well', 'error');
         }
-    };
+    }
+};
 
     const handleRefresh = async () => {
         if (currentWellId) {

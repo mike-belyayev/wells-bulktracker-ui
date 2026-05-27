@@ -50,6 +50,10 @@
     color: #1976d2 !important;
 }
 
+.well-edit-icon:hover {
+    background: rgba(25, 118, 210, 0.1) !important;
+}
+
 /* 3-Value Table */
 .metrics-table {
     margin-bottom: 16px;
@@ -100,41 +104,28 @@
 
 /* Casing Diagram */
 .casing-diagram-container {
+    position: relative;
     flex: 1;
     min-height: 200px;
+    display: flex;
+    flex-direction: column;
 }
 
 .diagram-wrapper {
-    display: flex;
-    gap: 8px;
     position: relative;
-    height: 100%;
-    min-height: 250px;
+    flex: 1;
+    min-height: 200px;
     background-color: #fafafa;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
-    padding: 12px;
-}
-
-.depth-scale {
-    position: relative;
-    width: 35px;
-    height: 100%;
-    border-right: 1px solid #ccc;
-    flex-shrink: 0;
-}
-
-.depth-marker {
-    position: absolute;
-    right: 8px;
-    font-size: 0.55rem;
-    color: #666;
-    transform: translateY(50%);
+    padding: 16px;
 }
 
 .diagram-area {
-    flex: 1;
     position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 180px;
     background: #f5f5f5;
     border-radius: 4px;
     overflow: visible;
@@ -192,13 +183,6 @@
     line-height: 1.2;
 }
 
-.casing-depth {
-    color: #666;
-    display: block;
-    line-height: 1.2;
-    font-size: 0.55rem !important;
-}
-
 .casing-type {
     color: #1976d2;
     display: block;
@@ -207,13 +191,43 @@
     text-transform: uppercase;
 }
 
-/* Edit Dialog Styles */
+/* Edit button at bottom right */
+.casing-edit-bottom-btn {
+    position: absolute !important;
+    bottom: 8px;
+    right: 8px;
+    background: white !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.casing-edit-bottom-btn:hover {
+    background: #f5f5f5 !important;
+}
+
+.add-casing-btn {
+    margin-top: 8px;
+    width: 100%;
+    text-transform: none !important;
+}
+
+.empty-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 150px;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Casing Edit Dialog */
 .casing-edit-list {
-    margin-top: 12px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 400px;
+    margin: 12px 0;
+    max-height: 350px;
     overflow-y: auto;
 }
 
@@ -226,21 +240,21 @@
 .casing-edit-fields {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .casing-edit-row-content {
     display: flex;
-    gap: 12px;
+    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .casing-edit-size {
     font-weight: 700;
     font-size: 0.85rem;
-    min-width: 50px;
+    min-width: 100px;
 }
 
 .casing-edit-type {
@@ -250,17 +264,9 @@
     text-transform: uppercase;
 }
 
-.casing-edit-depth {
-    font-size: 0.75rem;
-    color: #666;
-    font-family: monospace;
-    min-width: 70px;
-}
-
-.casing-edit-desc {
-    font-size: 0.7rem;
-    color: #333;
-    min-width: 100px;
+.casing-edit-actions {
+    display: flex;
+    gap: 4px;
 }
 
 .casing-add-row {
@@ -298,27 +304,93 @@
 
 /* Add to WellInformation.css */
 
-.delete-well-btn {
-    color: #f44336 !important;
-    background: rgba(244, 67, 54, 0.1) !important;
+.casing-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-.delete-well-btn:hover {
-    background: rgba(244, 67, 54, 0.2) !important;
+.casing-edit-row {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.casing-edit-fields {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.casing-edit-row-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.casing-edit-size {
+    font-weight: 700;
+    font-size: 0.85rem;
+    min-width: 80px;
+}
+
+.casing-edit-type {
+    font-size: 0.7rem;
+    color: #1976d2;
+    min-width: 70px;
+    text-transform: uppercase;
+}
+
+.casing-edit-desc {
+    font-size: 0.7rem;
+    color: #666;
+    flex: 1;
+    min-width: 120px;
+}
+
+.casing-edit-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.add-casing-dialog-btn {
+    margin-top: 8px;
+    text-transform: none !important;
+}
+
+.casing-edit-bottom-btn {
+    position: absolute !important;
+    bottom: 8px;
+    right: 8px;
+    background: white !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.casing-edit-bottom-btn:hover {
+    background: #f5f5f5 !important;
+}
+
+.empty-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 150px;
+    text-align: center;
+    padding: 20px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .casing-edit-fields,
-    .casing-edit-row-content,
-    .casing-add-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .depth-marker {
-        font-size: 0.45rem;
-        right: 4px;
+    .well-name-large {
+        font-size: 0.9rem !important;
     }
     
     .metric-header-cell {
@@ -331,7 +403,13 @@
         padding: 6px;
     }
     
-    .well-name-large {
-        font-size: 0.9rem !important;
+    .casing-edit-size {
+        font-size: 0.7rem;
+        min-width: 70px;
+    }
+    
+    .casing-edit-type {
+        font-size: 0.6rem;
+        min-width: 50px;
     }
 }
