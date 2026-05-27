@@ -37,7 +37,7 @@ const GROUP_COLORS = [
     { name: 'Light Cyan', value: 'cyan', bg: '#B2EBF2', border: '#00838F' },
 ];
 
-const MudPitFluidData = ({ fluidData, wellId, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
+const MudPitFluidData = ({ fluidData, onUpdate, readOnly = false }: MudPitFluidDataProps) => {
     const [pits, setPits] = useState<PitData[]>([]);
     const [loading, setLoading] = useState(true);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
