@@ -6,237 +6,41 @@
     flex-direction: column;
     overflow: hidden;
     background-color: white !important;
-    border-radius: 0 !important;
     border: 1px solid #e0e0e0;
 }
 
-/* Header - flush to top, no rounded corners, minimal height */
-.vessels-header {
+/* Supply Vessels Header - Dark, single line */
+.supply-header {
     display: flex;
-    align-items: stretch;
-    gap: 0;
-    padding: 0;
-    background-color: #2c3e50 !important;
-    flex-shrink: 0;
-    min-height: auto;
-}
-
-.header-title-section {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    padding: 0px 4px;
-    flex-shrink: 0;
-}
-
-.vessels-title {
-    font-weight: 800 !important;
-    font-size: 0.6rem !important;
-    color: white !important;
-    line-height: 1.2 !important;
-    white-space: nowrap;
-}
-
-/* Cargo Header Bar - Takes remaining space */
-.cargo-header-bar {
-    flex: 1;
-    overflow-x: auto;
-    overflow-y: visible;
-    min-width: 100px;
-    margin: 0;
-    padding: 0;
-    background-color: #2c3e50;
-}
-
-.cargo-header-bar::-webkit-scrollbar {
-    height: 3px;
-}
-
-.cargo-header-bar::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
-}
-
-.cargo-header-bar::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-    border-radius: 0;
-}
-
-/* Horizontal scroll container for date groups */
-.cargo-scroll-container {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 0;
-    padding: 0;
-    height: 100%;
-}
-
-/* Each date group - stacked vertically */
-.cargo-date-group-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex-shrink: 0;
-    border-right: 1px solid rgba(255,255,255,0.1);
-    min-width: 160px;
-}
-
-/* Date tag - NO vertical padding, flush to top edge */
-.cargo-date-tag-header {
-    background: rgb(0, 0, 0);
-    padding: 0px 8px;
-    text-align: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.cargo-date-text-header {
-    font-size: 0.5rem;
-    font-weight: 600;
-    color: white;
-    white-space: nowrap;
-    letter-spacing: 0.3px;
-}
-
-/* Vessels row - below the date, horizontally arranged, no padding */
-.cargo-vessels-row {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-    flex-wrap: nowrap;
-    align-items: center;
-}
-
-/* Individual cargo vessel - minimal height, cargo ON TOP */
-.cargo-vessel-header {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 90px;
-}
-
-/* Vessel name - very skinny, minimal padding */
-.cargo-vessel-name {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    background: rgba(0,0,0,0.5);
-    font-size: 0.5rem;
-    font-weight: 700;
-    color: white;
-    white-space: nowrap;
-    clip-path: polygon(0% 0%, 100% 0%, 97% 100%, 3% 100%);
-}
-
-.cargo-vessel-delete {
-    padding: 1px !important;
-    color: rgba(255,255,255,0.5) !important;
-}
-
-.cargo-vessel-delete:hover {
-    color: #ff9800 !important;
-}
-
-/* Containers row - cargo ON TOP of vessel, horizontal */
-.cargo-containers-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 3px;
-    padding: 3px;
     align-items: center;
-    min-height: 24px;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
 }
 
-/* Individual cargo container - neutral gray colors */
-.cargo-container-chip-header {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    background: #ffffff;
-    border: 1px solid #000000;
-    padding: 2px 5px;
-}
-
-.cargo-container-input-header {
-    font-size: 0.45rem;
-    font-weight: 500;
-    background: transparent;
-    border: none;
-    outline: none;
-    width: 50px;
-    text-align: center;
-}
-
-.cargo-container-input-header::placeholder {
-    color: rgba(255,255,255,0.6);
-}
-
-.cargo-container-input-header:focus {
-    background: rgba(255,255,255,0.15);
-}
-
-.cargo-container-delete {
-    padding: 1px !important;
-    color: rgba(255,255,255,0.5) !important;
-}
-
-.cargo-container-delete:hover {
-    color: #ff9800 !important;
-}
-
-/* Add cargo button - neutral */
-.add-cargo-container-header {
-    padding: 2px !important;
-    color: #aaa !important;
-    border: 1px dashed #888 !important;
-    background: transparent !important;
-}
-
-.add-cargo-container-header:hover {
-    background: rgba(255,255,255,0.1) !important;
-    color: #ccc !important;
-}
-
-/* Action buttons vertical - minimal padding */
-.header-actions-section-vertical {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    align-items: center;
-    flex-shrink: 0;
-    padding: 4px 10px;
-    background-color: #2c3e50;
-    border-left: 1px solid rgba(255,255,255,0.1);
-}
-
-.action-btn {
-    text-transform: none !important;
-    font-size: 0.45rem !important;
-    padding: 1px 6px !important;
-    min-width: 50px !important;
+.supply-title {
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
     color: white !important;
-    border-radius: 0 !important;
+    letter-spacing: 0.5px;
 }
 
-.supply-action {
-    background-color: #555 !important;
+.supply-header-actions {
+    display: flex;
+    gap: 8px;
 }
 
-.supply-action:hover {
-    background-color: #666 !important;
+.edit-supply-btn {
+    color: white !important;
+    background: rgba(255,255,255,0.1) !important;
+    padding: 4px !important;
 }
 
-.cargo-action {
-    background-color: #555 !important;
+.edit-supply-btn:hover {
+    background: rgba(255,255,255,0.2) !important;
 }
 
-.cargo-action:hover {
-    background-color: #666 !important;
-}
-
-/* Table styles */
+/* Table styles - LARGER TEXT */
 .vessels-table-container {
     flex: 1;
     overflow-x: auto;
@@ -247,136 +51,276 @@
     min-width: 1000px;
 }
 
-.table-header-cell {
+/* Inverted table header - larger text */
+.table-header-cell-inverted {
     font-weight: 700 !important;
-    background-color: #f0f0f0 !important;
-    font-size: 0.7rem !important;
-    padding: 5px 6px !important;
+    background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%) !important;
+    color: white !important;
+    font-size: 0.8rem !important;
+    padding: 10px 8px !important;
     white-space: nowrap;
-    border-bottom: 1px solid #ddd !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
 }
 
-.dynamic-header {
-    cursor: context-menu;
-    background-color: #e8e8e8 !important;
+/* Remove line breaks in headers */
+.table-header-cell-inverted br {
+    display: none;
 }
 
-.dynamic-header:hover {
-    background-color: #e0e0e0 !important;
-}
-
-.unit-text {
-    font-size: 0.55rem;
-    font-weight: normal;
-    color: #666;
-    margin-left: 4px;
-}
-
+/* Table body cells - larger text */
 .table-body-cell {
-    font-size: 0.7rem !important;
-    padding: 4px 6px !important;
+    font-size: 1rem !important;    /* 16px - standard body text size */
+    padding: 10px 8px !important;
     border-bottom: 1px solid #f0f0f0 !important;
 }
 
-.empty-cell {
-    color: #999 !important;
-    font-style: italic !important;
+/* Empty cell styling - grey background for zero or empty values */
+.table-body-cell.empty-cell {
+    color: #878787 !important;
+    background-color: #ededed !important;
+    font-style: italic;
+}
+
+/* Zero value cell */
+.table-body-cell.zero-cell {
+    color: #bbb !important;
     background-color: #fafafa !important;
 }
 
-.empty-table-cell {
-    padding: 30px !important;
-    color: #999 !important;
-    font-style: italic !important;
+.unit-text {
+    font-size: 0.65rem;
+    font-weight: normal;
+    color: rgba(255,255,255,0.8);
+    margin-left: 2px;
 }
 
-.actions-header {
+.actions-header-cell {
+    width: 50px;
     text-align: center;
-    min-width: 65px;
+    padding: 8px 4px !important;
 }
 
-.actions-header-content {
+.edit-table-icon {
+    color: white !important;
+    background: rgba(255,255,255,0.15) !important;
+    padding: 6px !important;
+}
+
+.edit-table-icon:hover {
+    background: rgba(255,255,255,0.25) !important;
+}
+
+/* Cargo Section - Compact */
+.cargo-section-compact {
+    background-color: #fafafa;
+    padding: 6px 12px;
+}
+
+.cargo-header-compact {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    padding: 2px 4px;
+    margin-bottom: 8px;
+}
+
+.cargo-title-compact {
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: #333;
+    letter-spacing: 0.5px;
+}
+
+.add-cargo-compact {
+    padding: 2px !important;
+    color: #4caf50 !important;
+}
+
+.cargo-scroll-horizontal {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.cargo-date-group-compact {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+
+.cargo-date-vertical-compact {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-orientation: mixed;
+    background: #e0e0e0;
+    padding: 6px 3px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.cargo-vessels-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cargo-vessel-compact {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.cargo-containers-stack {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 4px;
+    padding: 6px;
+    background: #f5f5f5;
+    min-height: 55px;
 }
 
-.add-column-icon-btn {
-    min-width: 20px !important;
-    width: 20px !important;
-    height: 20px !important;
-    padding: 0 !important;
-    background-color: #e0e0e0 !important;
-    border: 1px solid #ccc !important;
-    color: #333 !important;
-    font-size: 0.8rem !important;
-    font-weight: bold !important;
-    border-radius: 0 !important;
+.cargo-container-stack-item {
+    background: #e8e8e8;
+    border-radius: 3px;
+    padding: 4px 6px;
+    text-align: center;
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: #333;
 }
 
-.add-column-icon-btn:hover {
-    background-color: #d0d0d0 !important;
+.cargo-vessel-footer-compact {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    background: white;
+    border-top: 1px solid #e0e0e0;
 }
 
-/* Table edit mode */
-.vessels-table .MuiTextField-root {
-    margin: 0;
+.cargo-vessel-name-compact {
+    font-weight: 700;
+    font-size: 0.65rem;
+    color: #333;
 }
 
-.vessels-table .MuiInputBase-root {
-    font-size: 0.7rem !important;
+.cargo-edit-compact {
+    padding: 2px !important;
+    color: #666 !important;
 }
 
-.vessels-table .MuiOutlinedInput-input {
-    padding: 3px 5px !important;
+.cargo-edit-compact:hover {
+    color: #1976d2 !important;
 }
 
-.vessels-table .MuiIconButton-root {
-    padding: 2px;
+/* Edit Dialog Styles - with text inputs (not number) */
+.supply-edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 16px 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.supply-edit-row {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.supply-edit-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.supply-edit-row-content {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.supply-edit-value {
+    font-size: 0.8rem;
+    min-width: 85px;
+    font-weight: 500;
+}
+
+.supply-edit-number {
+    font-size: 0.8rem;
+    font-family: monospace;
+    min-width: 55px;
+    text-align: right;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* Text field styling */
+.supply-edit-fields .MuiTextField-root {
+    min-width: 100px;
+}
+
+.supply-edit-fields .MuiInputBase-input {
+    font-size: 0.8rem;
+    padding: 8px 8px;
+}
+
+.cargo-container-edit-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 /* Scrollbar */
-.vessels-table-container::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+.vessels-table-container::-webkit-scrollbar,
+.cargo-scroll-horizontal::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
-.vessels-table-container::-webkit-scrollbar-track {
+.vessels-table-container::-webkit-scrollbar-track,
+.cargo-scroll-horizontal::-webkit-scrollbar-track {
     background: #f0f0f0;
 }
 
-.vessels-table-container::-webkit-scrollbar-thumb {
+.vessels-table-container::-webkit-scrollbar-thumb,
+.cargo-scroll-horizontal::-webkit-scrollbar-thumb {
     background: #aaa;
-    border-radius: 0;
-}
-
-.vessels-table-container::-webkit-scrollbar-thumb:hover {
-    background: #888;
-}
-
-/* No rounded corners */
-.MuiPaper-root {
-    border-radius: 0 !important;
-}
-
-.MuiDialog-paper {
-    border-radius: 0 !important;
+    border-radius: 3px;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    .vessels-header {
-        flex-wrap: wrap;
-    }
-    
-    .table-header-cell {
-        font-size: 0.55rem !important;
-        padding: 3px !important;
+    .table-header-cell-inverted {
+        font-size: 0.65rem !important;
+        padding: 6px 4px !important;
     }
     
     .table-body-cell {
-        font-size: 0.6rem !important;
-        padding: 3px !important;
+        font-size: 0.7rem !important;
+        padding: 6px 4px !important;
+    }
+    
+    .cargo-vessel-compact {
+        min-width: 100px;
+    }
+    
+    .cargo-container-stack-item {
+        font-size: 0.55rem;
+        padding: 3px 4px;
     }
 }
