@@ -3,7 +3,7 @@
 .bop-container {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
     height: 100%;
     overflow-y: auto;
 }
@@ -16,9 +16,9 @@
     border-radius: 4px;
 }
 
-/* Dark header - ONLY for the table title (inverted) */
+/* Table header with edit button */
 .table-header-dark {
-    padding: 2px 8px;
+    padding: 6px 12px;
     background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
     flex-shrink: 0;
     display: flex;
@@ -30,151 +30,131 @@
     font-weight: 700;
     font-size: 0.7rem !important;
     color: white;
-    letter-spacing: 0.5px !important;
+    letter-spacing: 0.5px;
 }
 
-.add-row-btn-dark {
+.edit-table-btn {
     color: white !important;
     background: rgba(255,255,255,0.1) !important;
-    padding: 2px !important;
+    padding: 4px !important;
 }
 
-.add-row-btn-dark:hover {
-    background: rgba(255,255,255,0.2);
+.edit-table-btn:hover {
+    background: rgba(255,255,255,0.2) !important;
 }
 
-/* BOP table headers - LIGHT background (regular) */
-.bop-header-cell-dark {
-    font-weight: 700;
-    background-color: #f0f0f0 !important;
-    color: #333 !important;
-    font-size: 0.55rem;
-    padding: 4px 6px;
-    border-bottom: 1px solid #e0e0e0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.bop-system-cell-dark {
-    font-size: 0.55rem;
-    padding: 4px 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100px;
-    background-color: white;
-}
-
-.bop-date-cell-dark {
-    font-size: 0.55rem;
-    padding: 4px 6px;
-    white-space: nowrap;
-    font-family: monospace;
-    background-color: white;
-}
-
-/* Pump headers - LIGHT background (regular) */
+/* Table headers - light */
+.bop-header-cell-dark,
 .pump-header-cell-dark {
     font-weight: 700;
     background-color: #f0f0f0 !important;
     color: #333 !important;
-    font-size: 0.5rem;
-    padding: 4px 4px;
+    font-size: 0.55rem;
+    padding: 6px 8px;
     border-bottom: 1px solid #e0e0e0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 
+/* Table cells */
+.bop-system-cell-dark,
+.bop-date-cell-dark,
 .pump-value-cell-dark {
-    font-size: 0.5rem;
-    padding: 4px 4px;
+    font-size: 0.55rem;
+    padding: 6px 8px;
     background-color: white;
 }
 
-/* Date headers - compact */
-.date-header {
-    width: 70px;
-}
-
-/* Action columns */
-.action-header-cell {
-    width: 40px;
-    text-align: center;
-    padding: 4px 2px;
-}
-
-.action-cell {
-    text-align: center;
-}
-
-.action-cell .MuiIconButton-root {
-    padding: 2px;
-}
-
-/* Editing actions */
-.editing-actions-cell {
-    width: 120px;
-    min-width: 120px;
-    text-align: center;
+.bop-system-cell-dark {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 2px;
 }
 
-.editing-actions-cell .MuiIconButton-root {
-    padding: 2px;
-    margin: 0;
-}
-
-.editing-cell {
-    padding: 2px 4px;
-}
-
-.editing-cell.compact {
-    padding: 1px 2px;
-}
-
-.editing-cell .MuiInputBase-root {
-    font-size: 0.55rem;
-}
-
-/* Fixed table layout */
-.bop-table {
-    width: 100%;
-    table-layout: fixed;
-}
-
-.bop-table .bop-system-cell-dark {
-    width: 45%;
-}
-.bop-table .bop-date-cell-dark {
-    width: 22%;
-}
-
-.mud-table {
-    width: 100%;
-    table-layout: fixed;
-}
-
-.mud-table .pump-value-cell-dark:nth-child(1) { width: 15%; }
-.mud-table .pump-value-cell-dark:nth-child(2) { width: 25%; }
-.mud-table .pump-value-cell-dark:nth-child(3) { width: 25%; }
-.mud-table .pump-value-cell-dark:nth-child(4) { width: 25%; }
-
-/* Table container - grows with content */
-.bop-table-container {
-    overflow-x: auto;
-    overflow-y: visible;
-}
-
-/* Date urgent styling - for past AND approaching dates */
 .date-urgent {
     background-color: #ffebee !important;
     color: #c62828 !important;
     font-weight: 700 !important;
 }
 
-.date-urgent:hover {
-    background-color: #ffcdd2 !important;
+.empty-cell {
+    padding: 20px !important;
+    color: #999 !important;
+    font-style: italic !important;
+}
+
+/* Edit Dialog styles */
+.edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.edit-row {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.edit-fields {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.edit-row-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.edit-system {
+    font-weight: 600;
+    font-size: 0.85rem;
+    min-width: 150px;
+}
+
+.edit-date {
+    font-size: 0.75rem;
+    color: #666;
+    font-family: monospace;
+    min-width: 90px;
+}
+
+.edit-pump {
+    font-weight: 600;
+    font-size: 0.85rem;
+    min-width: 50px;
+}
+
+.edit-liner {
+    font-size: 0.8rem;
+    min-width: 80px;
+}
+
+.edit-number {
+    font-size: 0.75rem;
+    font-family: monospace;
+    min-width: 80px;
+    text-align: right;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.add-row-btn {
+    margin-top: 8px;
+    text-transform: none !important;
+}
+
+/* BOP table container */
+.bop-table-container {
+    overflow-x: auto;
 }

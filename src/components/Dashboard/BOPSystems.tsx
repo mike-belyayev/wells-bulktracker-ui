@@ -3,29 +3,24 @@ import { useState, useEffect } from 'react';
 import { 
     Paper, Typography, Table, TableBody, TableCell, TableContainer, 
     TableHead, TableRow, IconButton, TextField, Dialog, 
-    DialogTitle, DialogContent, DialogActions, Button
+    DialogTitle, DialogContent, DialogActions, Button, Tooltip
 } from '@mui/material';
 import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
 import './BOPSystems.css';
 
 export interface BopSystem {
     id?: string;
-    _id?: string;
-    System?: string;
-    system?: string;
+    System: string;
     testDate: string;
     nextDate: string;
 }
 
 export interface MudPumpLiner {
     id?: string;
-    _id?: string;
-    pump: number;
+    pump: string;
     liner: string;
-    galStk?: number;
-    bblStk?: number;
-    galPerStk?: number;
-    bblPerStk?: number;
+    galStk: string;
+    bblStk: string;
 }
 
 export interface BOPSystemsProps {
@@ -37,17 +32,20 @@ export interface BOPSystemsProps {
     readOnly?: boolean;
 }
 
-// Helper functions for date formatting - DD-MMM-YY
+// Helper functions for date formatting - Fixing the day offset issue
 const formatDateToDisplay = (dateString: string): string => {
     if (!dateString) return '—';
     try {
-        if (dateString.match(/^\d{2}-[A-Za-z]{3}-\d{2}$/)) {
+        // If it's already in DD-MMM-YYYY format, return as is
+        if (dateString.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
             return dateString;
         }
         
+        // Parse the date without timezone offset
         let year: number, month: number, day: number;
         
         if (dateString.includes('T')) {
+            // ISO format: 2026-05-22T00:00:00.000Z
             const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
             if (match) {
                 year = parseInt(match[1]);
@@ -69,7 +67,7 @@ const formatDateToDisplay = (dateString: string): string => {
         const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         const displayDay = String(day).padStart(2, '0');
         const displayMonth = monthNames[month];
-        const displayYear = String(year).slice(-2);
+        const displayYear = year;
         
         return `${displayDay}-${displayMonth}-${displayYear}`;
     } catch {
@@ -80,11 +78,8 @@ const formatDateToDisplay = (dateString: string): string => {
 const formatDateForInput = (dateString: string): string => {
     if (!dateString) return '';
     try {
-        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            return dateString;
-        }
-        
-        const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
+        // Handle DD-MMM-YYYY format
+        const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
         if (match) {
             const monthMap: { [key: string]: string } = {
                 'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
@@ -93,14 +88,23 @@ const formatDateForInput = (dateString: string): string => {
             };
             const month = monthMap[match[2].toUpperCase()];
             if (month) {
-                const fullYear = `20${match[3]}`;
-                return `${fullYear}-${month}-${match[1]}`;
+                return `${match[3]}-${month}-${match[1]}`;
             }
         }
         
+        // Handle ISO format
         const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (isoMatch) {
             return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+        }
+        
+        // Handle any other format by trying to create a date at noon UTC to avoid offset
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
     } catch (e) {
         console.error('Date parsing error:', e);
@@ -110,76 +114,59 @@ const formatDateForInput = (dateString: string): string => {
 
 const formatDateForSave = (dateString: string): string => {
     if (!dateString) return '';
-    
-    const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
+    // If already in the correct format, return as is
+    if (dateString.match(/^\d{2}-[A-Za-z]{3}-\d{4}$/)) {
+        return dateString;
+    }
+    // Convert YYYY-MM-DD to DD-MMM-YYYY
+    const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (match) {
-        const monthMap: { [key: string]: number } = {
-            'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3,
-            'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7,
-            'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
+        const monthMap: { [key: string]: string } = {
+            '01': 'JAN', '02': 'FEB', '03': 'MAR', '04': 'APR',
+            '05': 'MAY', '06': 'JUN', '07': 'JUL', '08': 'AUG',
+            '09': 'SEP', '10': 'OCT', '11': 'NOV', '12': 'DEC'
         };
-        const day = parseInt(match[1]);
-        const month = monthMap[match[2].toUpperCase()];
-        const year = 2000 + parseInt(match[3]);
-        
-        const date = new Date(Date.UTC(year, month, day, 12, 0, 0));
-        return date.toISOString();
+        const month = monthMap[match[2]];
+        if (month) {
+            return `${match[3]}-${month}-${match[1]}`;
+        }
     }
-    
-    const isoMatch = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (isoMatch) {
-        const year = parseInt(isoMatch[1]);
-        const month = parseInt(isoMatch[2]) - 1;
-        const day = parseInt(isoMatch[3]);
-        const date = new Date(Date.UTC(year, month, day, 12, 0, 0));
-        return date.toISOString();
-    }
-    
     return dateString;
 };
 
-// Function to check if date is urgent (past OR within 3 days)
 const isDateUrgent = (dateString: string): boolean => {
     if (!dateString || dateString === '—') return false;
-    
     try {
-        const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{2})$/);
-        if (!match) return false;
-        
-        const monthMap: { [key: string]: number } = {
-            'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3,
-            'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7,
-            'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
-        };
-        
-        const day = parseInt(match[1]);
-        const month = monthMap[match[2].toUpperCase()];
-        const year = 2000 + parseInt(match[3]);
-        
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const targetDate = new Date(year, month, day);
-        targetDate.setHours(0, 0, 0, 0);
-        
-        const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Return true if date is in the past OR within 3 days in future
-        return diffDays < 0 || (diffDays >= 0 && diffDays <= 3);
+        // Parse DD-MMM-YYYY format
+        const match = dateString.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+        if (match) {
+            const monthMap: { [key: string]: number } = {
+                'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3,
+                'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7,
+                'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
+            };
+            const day = parseInt(match[1]);
+            const month = monthMap[match[2].toUpperCase()];
+            const year = parseInt(match[3]);
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const targetDate = new Date(year, month, day);
+            targetDate.setHours(0, 0, 0, 0);
+            
+            const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            return diffDays < 0 || (diffDays >= 0 && diffDays <= 3);
+        }
     } catch {
         return false;
     }
+    return false;
 };
 
-const getSystemName = (system: BopSystem): string => {
-    return system.System || system.system || '';
-};
-
-const formatNumber = (value: number | string | undefined, decimals: number = 4): string => {
-    if (value === undefined || value === null || value === '') return '—';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num)) return '—';
-    return num.toFixed(decimals);
+const formatDisplayValue = (value: string): string => {
+    if (!value || value === '0') return '—';
+    return value;
 };
 
 const BOPSystems = ({ 
@@ -191,20 +178,22 @@ const BOPSystems = ({
 }: BOPSystemsProps) => {
     const [bopSystems, setBopSystems] = useState<BopSystem[]>([]);
     const [mudPumpLiners, setMudPumpLiners] = useState<MudPumpLiner[]>([]);
+    const [bopDialogOpen, setBopDialogOpen] = useState(false);
+    const [mudDialogOpen, setMudDialogOpen] = useState(false);
+    const [tempBopSystems, setTempBopSystems] = useState<BopSystem[]>([]);
+    const [tempMudLiners, setTempMudLiners] = useState<MudPumpLiner[]>([]);
     const [editingBopIndex, setEditingBopIndex] = useState<number | null>(null);
     const [editingBopData, setEditingBopData] = useState<Partial<BopSystem>>({});
     const [editingMudIndex, setEditingMudIndex] = useState<number | null>(null);
     const [editingMudData, setEditingMudData] = useState<Partial<MudPumpLiner>>({});
-    const [addBopDialogOpen, setAddBopDialogOpen] = useState(false);
-    const [addMudDialogOpen, setAddMudDialogOpen] = useState(false);
-    const [newBop, setNewBop] = useState<Partial<BopSystem>>({ System: '', testDate: '', nextDate: '' });
-    const [newMud, setNewMud] = useState<Partial<MudPumpLiner>>({ pump: 0, liner: '', galStk: 0, bblStk: 0 });
+    const [bopTableName, setBopTableName] = useState('BOP SYSTEMS DATA');
+    const [mudTableName, setMudTableName] = useState('MUD PUMP LINERS');
 
     useEffect(() => {
         if (initialBopData && initialBopData.length > 0) {
             const formattedData = initialBopData.map((system, idx) => ({
-                ...system,
-                id: system._id || `bop_${idx}`,
+                id: system.id || `bop_${idx}`,
+                System: system.System || '',
                 testDate: formatDateToDisplay(system.testDate),
                 nextDate: formatDateToDisplay(system.nextDate)
             }));
@@ -215,12 +204,11 @@ const BOPSystems = ({
         
         if (initialMudPumpData && initialMudPumpData.length > 0) {
             const formattedData = initialMudPumpData.map((liner, idx) => ({
-                ...liner,
-                id: liner._id || `mud_${idx}`,
-                galStk: liner.galStk || liner.galPerStk || 0,
-                bblStk: liner.bblStk || liner.bblPerStk || 0,
-                galPerStk: liner.galStk || liner.galPerStk || 0,
-                bblPerStk: liner.bblStk || liner.bblPerStk || 0
+                id: liner.id || `mud_${idx}`,
+                pump: liner.pump || '',
+                liner: liner.liner || '',
+                galStk: liner.galStk || '',
+                bblStk: liner.bblStk || ''
             }));
             setMudPumpLiners(formattedData);
         } else {
@@ -228,15 +216,61 @@ const BOPSystems = ({
         }
     }, [initialBopData, initialMudPumpData]);
 
-    // BOP Systems handlers
+    const handleOpenBopDialog = () => {
+        setTempBopSystems(JSON.parse(JSON.stringify(bopSystems)));
+        setEditingBopIndex(null);
+        setBopDialogOpen(true);
+    };
+
+    const handleOpenMudDialog = () => {
+        setTempMudLiners(JSON.parse(JSON.stringify(mudPumpLiners)));
+        setEditingMudIndex(null);
+        setMudDialogOpen(true);
+    };
+
+    const handleCloseBopDialog = () => {
+        setBopDialogOpen(false);
+        setEditingBopIndex(null);
+        setEditingBopData({});
+    };
+
+    const handleCloseMudDialog = () => {
+        setMudDialogOpen(false);
+        setEditingMudIndex(null);
+        setEditingMudData({});
+    };
+
+    const handleSaveBopSystems = async () => {
+        if (onBopUpdate) {
+            const systemsToSave = tempBopSystems.map((s) => ({
+                System: s.System,
+                testDate: formatDateForSave(s.testDate),
+                nextDate: formatDateForSave(s.nextDate)
+            }));
+            await onBopUpdate(systemsToSave);
+            setBopSystems(tempBopSystems);
+            handleCloseBopDialog();
+        }
+    };
+
+    const handleSaveMudLiners = async () => {
+        if (onMudPumpUpdate) {
+            const linersToSave = tempMudLiners.map((l) => ({
+                pump: l.pump,
+                liner: l.liner,
+                galStk: l.galStk,
+                bblStk: l.bblStk
+            }));
+            await onMudPumpUpdate(linersToSave);
+            setMudPumpLiners(tempMudLiners);
+            handleCloseMudDialog();
+        }
+    };
+
+    // BOP edit handlers
     const handleEditBop = (index: number) => {
-        const system = bopSystems[index];
         setEditingBopIndex(index);
-        setEditingBopData({
-            System: getSystemName(system),
-            testDate: formatDateForInput(system.testDate),
-            nextDate: formatDateForInput(system.nextDate)
-        });
+        setEditingBopData({ ...tempBopSystems[index] });
     };
 
     const handleCancelBopEdit = () => {
@@ -244,113 +278,61 @@ const BOPSystems = ({
         setEditingBopData({});
     };
 
-    const handleSaveBopEdit = async () => {
+    const handleSaveBopEdit = () => {
         if (editingBopIndex !== null && editingBopData) {
-            const currentSystem = bopSystems[editingBopIndex];
-            const savedData = {
-                ...currentSystem,
-                System: editingBopData.System || getSystemName(currentSystem),
-                testDate: formatDateForSave(editingBopData.testDate || ''),
-                nextDate: formatDateForSave(editingBopData.nextDate || '')
-            };
-            const updatedSystems = [...bopSystems];
-            updatedSystems[editingBopIndex] = savedData;
-            setBopSystems(updatedSystems);
-            if (onBopUpdate) {
-                const apiData = updatedSystems.map(({ id, _id, system, ...rest }) => ({
-                    System: rest.System,
-                    testDate: rest.testDate,
-                    nextDate: rest.nextDate
-                }));
-                await onBopUpdate(apiData);
-            }
+            const updated = [...tempBopSystems];
+            updated[editingBopIndex] = { ...updated[editingBopIndex], ...editingBopData };
+            setTempBopSystems(updated);
             setEditingBopIndex(null);
             setEditingBopData({});
         }
     };
 
-    const handleBopInputChange = (field: string, value: string) => {
+    const handleBopInputChange = (field: keyof BopSystem, value: string) => {
         setEditingBopData({ ...editingBopData, [field]: value });
     };
 
-    const handleDeleteBop = async (index: number) => {
+    const handleAddBop = () => {
+        const newSystem: BopSystem = {
+            id: `bop_${Date.now()}`,
+            System: '',
+            testDate: '',
+            nextDate: ''
+        };
+        setTempBopSystems([...tempBopSystems, newSystem]);
+        setEditingBopIndex(tempBopSystems.length);
+        setEditingBopData(newSystem);
+    };
+
+    const handleDeleteBop = (index: number) => {
         if (window.confirm('Are you sure you want to delete this BOP system?')) {
-            const updatedSystems = bopSystems.filter((_, i) => i !== index);
-            setBopSystems(updatedSystems);
-            if (onBopUpdate) {
-                const apiData = updatedSystems.map(({ id, _id, system, ...rest }) => ({
-                    System: rest.System,
-                    testDate: rest.testDate,
-                    nextDate: rest.nextDate
-                }));
-                await onBopUpdate(apiData);
+            const updated = tempBopSystems.filter((_, i) => i !== index);
+            setTempBopSystems(updated);
+            if (editingBopIndex === index) {
+                setEditingBopIndex(null);
+                setEditingBopData({});
             }
         }
     };
 
-    const handleAddBop = async () => {
-        if (newBop.System) {
-            const newSystem: BopSystem = {
-                id: `bop_${Date.now()}`,
-                System: newBop.System,
-                testDate: formatDateForSave(newBop.testDate || ''),
-                nextDate: formatDateForSave(newBop.nextDate || '')
-            };
-            const updatedSystems = [...bopSystems, newSystem];
-            setBopSystems(updatedSystems);
-            if (onBopUpdate) {
-                const apiData = updatedSystems.map(({ id, _id, system, ...rest }) => ({
-                    System: rest.System,
-                    testDate: rest.testDate,
-                    nextDate: rest.nextDate
-                }));
-                await onBopUpdate(apiData);
-            }
-            setAddBopDialogOpen(false);
-            setNewBop({ System: '', testDate: '', nextDate: '' });
-        }
-    };
-
-    const moveBopUp = async (index: number) => {
+    const moveBopUp = (index: number) => {
         if (index === 0) return;
-        const newSystems = [...bopSystems];
+        const newSystems = [...tempBopSystems];
         [newSystems[index - 1], newSystems[index]] = [newSystems[index], newSystems[index - 1]];
-        setBopSystems(newSystems);
-        if (onBopUpdate) {
-            const apiData = newSystems.map(({ id, _id, system, ...rest }) => ({
-                System: rest.System,
-                testDate: rest.testDate,
-                nextDate: rest.nextDate
-            }));
-            await onBopUpdate(apiData);
-        }
+        setTempBopSystems(newSystems);
     };
 
-    const moveBopDown = async (index: number) => {
-        if (index === bopSystems.length - 1) return;
-        const newSystems = [...bopSystems];
+    const moveBopDown = (index: number) => {
+        if (index === tempBopSystems.length - 1) return;
+        const newSystems = [...tempBopSystems];
         [newSystems[index + 1], newSystems[index]] = [newSystems[index], newSystems[index + 1]];
-        setBopSystems(newSystems);
-        if (onBopUpdate) {
-            const apiData = newSystems.map(({ id, _id, system, ...rest }) => ({
-                System: rest.System,
-                testDate: rest.testDate,
-                nextDate: rest.nextDate
-            }));
-            await onBopUpdate(apiData);
-        }
+        setTempBopSystems(newSystems);
     };
 
-    // Mud Pump Liners handlers
+    // Mud Pump edit handlers
     const handleEditMud = (index: number) => {
-        const liner = mudPumpLiners[index];
         setEditingMudIndex(index);
-        setEditingMudData({ 
-            pump: liner.pump,
-            liner: liner.liner,
-            galStk: liner.galStk || liner.galPerStk || 0,
-            bblStk: liner.bblStk || liner.bblPerStk || 0
-        });
+        setEditingMudData({ ...tempMudLiners[index] });
     };
 
     const handleCancelMudEdit = () => {
@@ -358,89 +340,59 @@ const BOPSystems = ({
         setEditingMudData({});
     };
 
-    const handleSaveMudEdit = async () => {
+    const handleSaveMudEdit = () => {
         if (editingMudIndex !== null && editingMudData) {
-            const updatedLiners = [...mudPumpLiners];
-            const currentLiner = mudPumpLiners[editingMudIndex];
-            updatedLiners[editingMudIndex] = {
-                ...currentLiner,
-                pump: editingMudData.pump || currentLiner.pump,
-                liner: editingMudData.liner || currentLiner.liner,
-                galStk: editingMudData.galStk !== undefined ? editingMudData.galStk : currentLiner.galStk,
-                bblStk: editingMudData.bblStk !== undefined ? editingMudData.bblStk : currentLiner.bblStk,
-                galPerStk: editingMudData.galStk !== undefined ? editingMudData.galStk : currentLiner.galPerStk,
-                bblPerStk: editingMudData.bblStk !== undefined ? editingMudData.bblStk : currentLiner.bblPerStk
-            };
-            setMudPumpLiners(updatedLiners);
-            if (onMudPumpUpdate) {
-                const apiData = updatedLiners.map(({ id, _id, galPerStk, bblPerStk, ...rest }) => rest);
-                await onMudPumpUpdate(apiData);
-            }
+            const updated = [...tempMudLiners];
+            updated[editingMudIndex] = { ...updated[editingMudIndex], ...editingMudData };
+            setTempMudLiners(updated);
             setEditingMudIndex(null);
             setEditingMudData({});
         }
     };
 
-    const handleMudInputChange = (field: keyof MudPumpLiner, value: string | number) => {
+    const handleMudInputChange = (field: keyof MudPumpLiner, value: string) => {
         setEditingMudData({ ...editingMudData, [field]: value });
     };
 
-    const handleDeleteMud = async (index: number) => {
+    const handleAddMud = () => {
+        const newLiner: MudPumpLiner = {
+            id: `mud_${Date.now()}`,
+            pump: '',
+            liner: '',
+            galStk: '',
+            bblStk: ''
+        };
+        setTempMudLiners([...tempMudLiners, newLiner]);
+        setEditingMudIndex(tempMudLiners.length);
+        setEditingMudData(newLiner);
+    };
+
+    const handleDeleteMud = (index: number) => {
         if (window.confirm('Are you sure you want to delete this mud pump liner?')) {
-            const updatedLiners = mudPumpLiners.filter((_, i) => i !== index);
-            setMudPumpLiners(updatedLiners);
-            if (onMudPumpUpdate) {
-                const apiData = updatedLiners.map(({ id, _id, galPerStk, bblPerStk, ...rest }) => rest);
-                await onMudPumpUpdate(apiData);
+            const updated = tempMudLiners.filter((_, i) => i !== index);
+            setTempMudLiners(updated);
+            if (editingMudIndex === index) {
+                setEditingMudIndex(null);
+                setEditingMudData({});
             }
         }
     };
 
-    const handleAddMud = async () => {
-        if (newMud.pump) {
-            const newLiner: MudPumpLiner = {
-                id: `mud_${Date.now()}`,
-                pump: newMud.pump || 0,
-                liner: newMud.liner || '',
-                galStk: newMud.galStk || 0,
-                bblStk: newMud.bblStk || 0,
-                galPerStk: newMud.galStk || 0,
-                bblPerStk: newMud.bblStk || 0
-            };
-            const updatedLiners = [...mudPumpLiners, newLiner];
-            setMudPumpLiners(updatedLiners);
-            if (onMudPumpUpdate) {
-                const apiData = updatedLiners.map(({ id, _id, galPerStk, bblPerStk, ...rest }) => rest);
-                await onMudPumpUpdate(apiData);
-            }
-            setAddMudDialogOpen(false);
-            setNewMud({ pump: 0, liner: '', galStk: 0, bblStk: 0 });
-        }
-    };
-
-    const moveMudUp = async (index: number) => {
+    const moveMudUp = (index: number) => {
         if (index === 0) return;
-        const newLiners = [...mudPumpLiners];
+        const newLiners = [...tempMudLiners];
         [newLiners[index - 1], newLiners[index]] = [newLiners[index], newLiners[index - 1]];
-        setMudPumpLiners(newLiners);
-        if (onMudPumpUpdate) {
-            const apiData = newLiners.map(({ id, _id, galPerStk, bblPerStk, ...rest }) => rest);
-            await onMudPumpUpdate(apiData);
-        }
+        setTempMudLiners(newLiners);
     };
 
-    const moveMudDown = async (index: number) => {
-        if (index === mudPumpLiners.length - 1) return;
-        const newLiners = [...mudPumpLiners];
+    const moveMudDown = (index: number) => {
+        if (index === tempMudLiners.length - 1) return;
+        const newLiners = [...tempMudLiners];
         [newLiners[index + 1], newLiners[index]] = [newLiners[index], newLiners[index + 1]];
-        setMudPumpLiners(newLiners);
-        if (onMudPumpUpdate) {
-            const apiData = newLiners.map(({ id, _id, galPerStk, bblPerStk, ...rest }) => rest);
-            await onMudPumpUpdate(apiData);
-        }
+        setTempMudLiners(newLiners);
     };
 
-    const truncateText = (text: string, maxLen: number = 12) => {
+    const truncateText = (text: string, maxLen: number = 15) => {
         if (!text) return '—';
         if (text.length <= maxLen) return text;
         return text.substring(0, maxLen) + '...';
@@ -452,11 +404,11 @@ const BOPSystems = ({
             <Paper className="info-table" elevation={0}>
                 <div className="table-header-dark">
                     <Typography variant="h6" className="table-title-dark">
-                        BOP SYSTEMS DATA
+                        {bopTableName}
                     </Typography>
                     {!readOnly && (
-                        <IconButton size="small" onClick={() => setAddBopDialogOpen(true)} className="add-row-btn-dark">
-                            <Add fontSize="small" />
+                        <IconButton size="small" onClick={handleOpenBopDialog} className="edit-table-btn" title="Edit Table">
+                            <Edit fontSize="small" />
                         </IconButton>
                     )}
                 </div>
@@ -467,7 +419,6 @@ const BOPSystems = ({
                                 <TableCell className="bop-header-cell-dark">System</TableCell>
                                 <TableCell className="bop-header-cell-dark date-header">Test Date</TableCell>
                                 <TableCell className="bop-header-cell-dark date-header">Next Date</TableCell>
-                                {!readOnly && <TableCell className="bop-header-cell-dark action-header-cell"> </TableCell>}
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -475,79 +426,26 @@ const BOPSystems = ({
                                 const isUrgent = isDateUrgent(system.nextDate);
                                 return (
                                     <TableRow key={system.id || idx}>
-                                        {editingBopIndex === idx ? (
-                                            <>
-                                                <TableCell className="editing-cell compact">
-                                                    <TextField
-                                                        size="small"
-                                                        value={editingBopData.System || ''}
-                                                        onChange={(e) => handleBopInputChange('System', e.target.value)}
-                                                        fullWidth
-                                                        inputProps={{ style: { fontSize: '0.55rem', padding: '2px 4px' } }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="editing-cell compact">
-                                                    <TextField
-                                                        size="small"
-                                                        type="date"
-                                                        value={editingBopData.testDate || ''}
-                                                        onChange={(e) => handleBopInputChange('testDate', e.target.value)}
-                                                        InputLabelProps={{ shrink: true }}
-                                                        inputProps={{ style: { fontSize: '0.55rem', padding: '2px 4px', width: '90px' } }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="editing-cell compact">
-                                                    <TextField
-                                                        size="small"
-                                                        type="date"
-                                                        value={editingBopData.nextDate || ''}
-                                                        onChange={(e) => handleBopInputChange('nextDate', e.target.value)}
-                                                        InputLabelProps={{ shrink: true }}
-                                                        inputProps={{ style: { fontSize: '0.55rem', padding: '2px 4px', width: '90px' } }}
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="editing-actions-cell">
-                                                    <IconButton size="small" onClick={() => moveBopUp(idx)} disabled={idx === 0}>
-                                                        <ArrowUpward fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={() => moveBopDown(idx)} disabled={idx === bopSystems.length - 1}>
-                                                        <ArrowDownward fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={() => handleDeleteBop(idx)} color="error">
-                                                        <Delete fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={handleSaveBopEdit} color="primary">
-                                                        <Save fontSize="small" />
-                                                    </IconButton>
-                                                    <IconButton size="small" onClick={handleCancelBopEdit} color="secondary">
-                                                        <Cancel fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <TableCell className="bop-system-cell-dark" title={getSystemName(system)}>
-                                                    {truncateText(getSystemName(system), 18)}
-                                                </TableCell>
-                                                <TableCell className="bop-date-cell-dark">{system.testDate || '—'}</TableCell>
-                                                <TableCell 
-                                                    className={`bop-date-cell-dark ${isUrgent ? 'date-urgent' : ''}`}
-                                                    title={isUrgent ? '⚠️ Date is past or within 3 days!' : ''}
-                                                >
-                                                    {system.nextDate || '—'}
-                                                </TableCell>
-                                                {!readOnly && (
-                                                    <TableCell className="action-cell">
-                                                        <IconButton size="small" onClick={() => handleEditBop(idx)}>
-                                                            <Edit fontSize="small" />
-                                                        </IconButton>
-                                                    </TableCell>
-                                                )}
-                                            </>
-                                        )}
+                                        <TableCell className="bop-system-cell-dark" title={system.System}>
+                                            {truncateText(system.System, 20)}
+                                        </TableCell>
+                                        <TableCell className="bop-date-cell-dark">{system.testDate || '—'}</TableCell>
+                                        <TableCell 
+                                            className={`bop-date-cell-dark ${isUrgent ? 'date-urgent' : ''}`}
+                                            title={isUrgent ? '⚠️ Date is past or within 3 days!' : ''}
+                                        >
+                                            {system.nextDate || '—'}
+                                        </TableCell>
                                     </TableRow>
                                 );
                             })}
+                            {bopSystems.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={3} align="center" className="empty-cell">
+                                        No data. Click Edit to add records.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
@@ -557,11 +455,11 @@ const BOPSystems = ({
             <Paper className="info-table" elevation={0}>
                 <div className="table-header-dark">
                     <Typography variant="h6" className="table-title-dark">
-                        MUD PUMP LINERS
+                        {mudTableName}
                     </Typography>
                     {!readOnly && (
-                        <IconButton size="small" onClick={() => setAddMudDialogOpen(true)} className="add-row-btn-dark">
-                            <Add fontSize="small" />
+                        <IconButton size="small" onClick={handleOpenMudDialog} className="edit-table-btn" title="Edit Table">
+                            <Edit fontSize="small" />
                         </IconButton>
                     )}
                 </div>
@@ -573,166 +471,202 @@ const BOPSystems = ({
                                 <TableCell className="pump-header-cell-dark">Liner</TableCell>
                                 <TableCell className="pump-header-cell-dark" align="right">gal/stk</TableCell>
                                 <TableCell className="pump-header-cell-dark" align="right">bbl/stk</TableCell>
-                                {!readOnly && <TableCell className="pump-header-cell-dark action-header-cell"> </TableCell>}
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {mudPumpLiners.map((liner, idx) => (
                                 <TableRow key={liner.id || idx}>
-                                    {editingMudIndex === idx ? (
-                                        <>
-                                            <TableCell className="editing-cell compact">
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    value={editingMudData.pump || 0}
-                                                    onChange={(e) => handleMudInputChange('pump', parseInt(e.target.value) || 0)}
-                                                    inputProps={{ style: { fontSize: '0.5rem', padding: '2px', textAlign: 'center' } }}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="editing-cell compact">
-                                                <TextField
-                                                    size="small"
-                                                    value={editingMudData.liner || ''}
-                                                    onChange={(e) => handleMudInputChange('liner', e.target.value)}
-                                                    inputProps={{ style: { fontSize: '0.5rem', padding: '2px', width: '50px' } }}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="editing-cell compact" align="right">
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    value={editingMudData.galStk || 0}
-                                                    onChange={(e) => handleMudInputChange('galStk', parseFloat(e.target.value) || 0)}
-                                                    inputProps={{ style: { fontSize: '0.5rem', padding: '2px', width: '55px', textAlign: 'right' } }}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="editing-cell compact" align="right">
-                                                <TextField
-                                                    size="small"
-                                                    type="number"
-                                                    value={editingMudData.bblStk || 0}
-                                                    onChange={(e) => handleMudInputChange('bblStk', parseFloat(e.target.value) || 0)}
-                                                    inputProps={{ style: { fontSize: '0.5rem', padding: '2px', width: '55px', textAlign: 'right' } }}
-                                                />
-                                            </TableCell>
-                                            <TableCell className="editing-actions-cell">
-                                                <IconButton size="small" onClick={() => moveMudUp(idx)} disabled={idx === 0}>
-                                                    <ArrowUpward fontSize="small" />
-                                                </IconButton>
-                                                <IconButton size="small" onClick={() => moveMudDown(idx)} disabled={idx === mudPumpLiners.length - 1}>
-                                                    <ArrowDownward fontSize="small" />
-                                                </IconButton>
-                                                <IconButton size="small" onClick={() => handleDeleteMud(idx)} color="error">
-                                                    <Delete fontSize="small" />
-                                                </IconButton>
-                                                <IconButton size="small" onClick={handleSaveMudEdit} color="primary">
-                                                    <Save fontSize="small" />
-                                                </IconButton>
-                                                <IconButton size="small" onClick={handleCancelMudEdit} color="secondary">
-                                                    <Cancel fontSize="small" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <TableCell className="pump-value-cell-dark">{liner.pump}</TableCell>
-                                            <TableCell className="pump-value-cell-dark">{truncateText(liner.liner, 8)}</TableCell>
-                                            <TableCell className="pump-value-cell-dark" align="right">{formatNumber(liner.galStk || liner.galPerStk, 2)}</TableCell>
-                                            <TableCell className="pump-value-cell-dark" align="right">{formatNumber(liner.bblStk || liner.bblPerStk, 4)}</TableCell>
-                                            {!readOnly && (
-                                                <TableCell className="action-cell">
-                                                    <IconButton size="small" onClick={() => handleEditMud(idx)}>
-                                                        <Edit fontSize="small" />
-                                                    </IconButton>
-                                                </TableCell>
-                                            )}
-                                        </>
-                                    )}
+                                    <TableCell className="pump-value-cell-dark">{liner.pump || '—'}</TableCell>
+                                    <TableCell className="pump-value-cell-dark">{truncateText(liner.liner, 8)}</TableCell>
+                                    <TableCell className="pump-value-cell-dark" align="right">{liner.galStk || '—'}</TableCell>
+                                    <TableCell className="pump-value-cell-dark" align="right">{liner.bblStk || '—'}</TableCell>
                                 </TableRow>
                             ))}
+                            {mudPumpLiners.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} align="center" className="empty-cell">
+                                        No data. Click Edit to add records.
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                 </TableContainer>
             </Paper>
 
-            {/* Add BOP Dialog */}
-            <Dialog open={addBopDialogOpen} onClose={() => setAddBopDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Add BOP System</DialogTitle>
+            {/* Edit BOP Systems Dialog */}
+            <Dialog open={bopDialogOpen} onClose={handleCloseBopDialog} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    <TextField
+                        value={bopTableName}
+                        onChange={(e) => setBopTableName(e.target.value)}
+                        variant="standard"
+                        InputProps={{ style: { fontSize: '1.25rem', fontWeight: 'bold' } }}
+                        fullWidth
+                    />
+                </DialogTitle>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="System Name"
-                        fullWidth
-                        value={newBop.System}
-                        onChange={(e) => setNewBop({ ...newBop, System: e.target.value })}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Test Date"
-                        type="date"
-                        fullWidth
-                        value={newBop.testDate}
-                        onChange={(e) => setNewBop({ ...newBop, testDate: e.target.value })}
-                        InputLabelProps={{ shrink: true }}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Next Date"
-                        type="date"
-                        fullWidth
-                        value={newBop.nextDate}
-                        onChange={(e) => setNewBop({ ...newBop, nextDate: e.target.value })}
-                        InputLabelProps={{ shrink: true }}
-                    />
+                    <div className="edit-list">
+                        {tempBopSystems.map((system, idx) => (
+                            <div key={idx} className="edit-row">
+                                {editingBopIndex === idx ? (
+                                    <div className="edit-fields">
+                                        <TextField
+                                            size="small"
+                                            label="System Name"
+                                            value={editingBopData.System || ''}
+                                            onChange={(e) => handleBopInputChange('System', e.target.value)}
+                                            sx={{ width: 200 }}
+                                            autoFocus
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="Test Date"
+                                            type="date"
+                                            value={formatDateForInput(editingBopData.testDate || '')}
+                                            onChange={(e) => handleBopInputChange('testDate', e.target.value)}
+                                            InputLabelProps={{ shrink: true }}
+                                            sx={{ width: 140 }}
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="Next Date"
+                                            type="date"
+                                            value={formatDateForInput(editingBopData.nextDate || '')}
+                                            onChange={(e) => handleBopInputChange('nextDate', e.target.value)}
+                                            InputLabelProps={{ shrink: true }}
+                                            sx={{ width: 140 }}
+                                        />
+                                        <div className="edit-actions">
+                                            <IconButton size="small" onClick={handleSaveBopEdit} color="primary">
+                                                <Save fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={handleCancelBopEdit} color="secondary">
+                                                <Cancel fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="edit-row-content">
+                                        <span className="edit-system">{system.System || '—'}</span>
+                                        <span className="edit-date">{system.testDate || '—'}</span>
+                                        <span className="edit-date">{system.nextDate || '—'}</span>
+                                        <div className="edit-actions">
+                                            <IconButton size="small" onClick={() => moveBopUp(idx)} disabled={idx === 0}>
+                                                <ArrowUpward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => moveBopDown(idx)} disabled={idx === tempBopSystems.length - 1}>
+                                                <ArrowDownward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleEditBop(idx)} color="primary">
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleDeleteBop(idx)} color="error">
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <Button size="small" startIcon={<Add />} onClick={handleAddBop} className="add-row-btn">
+                        Add BOP System
+                    </Button>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAddBopDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddBop} variant="contained" color="primary">Add</Button>
+                    <Button onClick={handleCloseBopDialog}>Cancel</Button>
+                    <Button onClick={handleSaveBopSystems} variant="contained" color="primary">Save Changes</Button>
                 </DialogActions>
             </Dialog>
 
-            {/* Add Mud Pump Dialog */}
-            <Dialog open={addMudDialogOpen} onClose={() => setAddMudDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Add Mud Pump Liner</DialogTitle>
+            {/* Edit Mud Pump Liners Dialog */}
+            <Dialog open={mudDialogOpen} onClose={handleCloseMudDialog} maxWidth="md" fullWidth>
+                <DialogTitle>
+                    <TextField
+                        value={mudTableName}
+                        onChange={(e) => setMudTableName(e.target.value)}
+                        variant="standard"
+                        InputProps={{ style: { fontSize: '1.25rem', fontWeight: 'bold' } }}
+                        fullWidth
+                    />
+                </DialogTitle>
                 <DialogContent>
-                    <TextField
-                        autoFocus
-                        margin="dense"
-                        label="Pump Number"
-                        type="number"
-                        fullWidth
-                        value={newMud.pump}
-                        onChange={(e) => setNewMud({ ...newMud, pump: parseInt(e.target.value) || 0 })}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="Liner Size"
-                        fullWidth
-                        value={newMud.liner}
-                        onChange={(e) => setNewMud({ ...newMud, liner: e.target.value })}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="gal/stk"
-                        type="number"
-                        fullWidth
-                        value={newMud.galStk}
-                        onChange={(e) => setNewMud({ ...newMud, galStk: parseFloat(e.target.value) || 0 })}
-                    />
-                    <TextField
-                        margin="dense"
-                        label="bbl/stk"
-                        type="number"
-                        fullWidth
-                        value={newMud.bblStk}
-                        onChange={(e) => setNewMud({ ...newMud, bblStk: parseFloat(e.target.value) || 0 })}
-                    />
+                    <div className="edit-list">
+                        {tempMudLiners.map((liner, idx) => (
+                            <div key={idx} className="edit-row">
+                                {editingMudIndex === idx ? (
+                                    <div className="edit-fields">
+                                        <TextField
+                                            size="small"
+                                            label="Pump"
+                                            value={editingMudData.pump || ''}
+                                            onChange={(e) => handleMudInputChange('pump', e.target.value)}
+                                            sx={{ width: 80 }}
+                                            autoFocus
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="Liner"
+                                            value={editingMudData.liner || ''}
+                                            onChange={(e) => handleMudInputChange('liner', e.target.value)}
+                                            sx={{ width: 100 }}
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="gal/stk"
+                                            value={editingMudData.galStk || ''}
+                                            onChange={(e) => handleMudInputChange('galStk', e.target.value)}
+                                            sx={{ width: 90 }}
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="bbl/stk"
+                                            value={editingMudData.bblStk || ''}
+                                            onChange={(e) => handleMudInputChange('bblStk', e.target.value)}
+                                            sx={{ width: 90 }}
+                                        />
+                                        <div className="edit-actions">
+                                            <IconButton size="small" onClick={handleSaveMudEdit} color="primary">
+                                                <Save fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={handleCancelMudEdit} color="secondary">
+                                                <Cancel fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="edit-row-content">
+                                        <span className="edit-pump">{liner.pump || '—'}</span>
+                                        <span className="edit-liner">{liner.liner || '—'}</span>
+                                        <span className="edit-number">{liner.galStk || '—'}</span>
+                                        <span className="edit-number">{liner.bblStk || '—'}</span>
+                                        <div className="edit-actions">
+                                            <IconButton size="small" onClick={() => moveMudUp(idx)} disabled={idx === 0}>
+                                                <ArrowUpward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => moveMudDown(idx)} disabled={idx === tempMudLiners.length - 1}>
+                                                <ArrowDownward fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleEditMud(idx)} color="primary">
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                            <IconButton size="small" onClick={() => handleDeleteMud(idx)} color="error">
+                                                <Delete fontSize="small" />
+                                            </IconButton>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <Button size="small" startIcon={<Add />} onClick={handleAddMud} className="add-row-btn">
+                        Add Mud Pump Liner
+                    </Button>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setAddMudDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddMud} variant="contained" color="primary">Add</Button>
+                    <Button onClick={handleCloseMudDialog}>Cancel</Button>
+                    <Button onClick={handleSaveMudLiners} variant="contained" color="primary">Save Changes</Button>
                 </DialogActions>
             </Dialog>
         </div>
