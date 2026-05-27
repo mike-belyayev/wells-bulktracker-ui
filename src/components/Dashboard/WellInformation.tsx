@@ -25,7 +25,7 @@ export interface WellInformationProps {
 
 const WellInformation = ({ wellData, wellId, onUpdate, onCasingUpdate, onDelete, onRefresh, readOnly = false }: WellInformationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [containerHeight, setContainerHeight] = useState(300);
+    const [, setContainerHeight] = useState(300);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [casingDialogOpen, setCasingDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
