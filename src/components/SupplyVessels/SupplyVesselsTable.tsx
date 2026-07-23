@@ -3,9 +3,19 @@ import { useState, useEffect } from 'react';
 import {
     Paper, Button, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, IconButton, TextField, Divider,
-    Dialog, DialogTitle, DialogContent, DialogActions, Typography
+    Dialog, DialogTitle, DialogContent, DialogActions, Typography,
+    Tooltip
 } from '@mui/material';
-import { Edit, Add, Delete, Save, Cancel, ArrowUpward, ArrowDownward, ViewColumn } from '@mui/icons-material';
+import { 
+    Edit, 
+    Add, 
+    Delete, 
+    Save, 
+    Cancel, 
+    ArrowUpward, 
+    ArrowDownward,
+    DriveFileRenameOutline
+} from '@mui/icons-material';
 import CargoVesselsSection, { type CargoVessel } from './CargoVesselsSection';
 import './SupplyVesselsTable.css';
 
@@ -21,6 +31,9 @@ export interface SupplyVessel {
     barite: number;
     baseOil: number;
     cementG: number;
+    additionalFields?: {
+        [key: string]: string | number;
+    };
     [key: string]: any;
 }
 
@@ -124,12 +137,17 @@ const formatDateForSave = (dateString: string): string => {
     return dateString;
 };
 
+// Helper to generate a key from a name
+const generateKey = (name: string): string => {
+    return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+};
+
 const SupplyVesselsTable = ({ 
     vessels, 
-    cargoVessels = [],  // Add cargoVessels prop with default empty array
+    cargoVessels = [],
     wellId,
     onVesselsChange, 
-    onCargoUpdate,      // Add onCargoUpdate prop
+    onCargoUpdate,
     onSave, 
     readOnly = false 
 }: SupplyVesselsTableProps) => {
@@ -138,27 +156,58 @@ const SupplyVesselsTable = ({
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingData, setEditingData] = useState<Partial<SupplyVessel>>({});
     const [dynamicColumns, setDynamicColumns] = useState<DynamicColumn[]>([]);
-    const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+    const [tempDynamicColumns, setTempDynamicColumns] = useState<DynamicColumn[]>([]); // Track columns in edit mode
+    const [showAddColumn, setShowAddColumn] = useState(false);
     const [newColumnName, setNewColumnName] = useState('');
     const [newColumnUnit, setNewColumnUnit] = useState('');
+    const [renamingColumn, setRenamingColumn] = useState<string | null>(null);
+    const [renameColumnName, setRenameColumnName] = useState('');
 
+    // Extract dynamic columns from vessels - ONLY if at least one vessel has a value
     useEffect(() => {
-        const allKeys = new Set<string>();
+        const columnMap = new Map<string, { name: string; key: string; unit: string; hasValue: boolean }>();
+        
         vessels.forEach(vessel => {
-            Object.keys(vessel).forEach(key => {
-                if (!['id', 'vessel', 'location', 'crewChange', 'fuelOil', 'potWater', 
-                       'drlWater', 'barite', 'baseOil', 'cementG'].includes(key)) {
-                    allKeys.add(key);
-                }
-            });
+            if (vessel.additionalFields) {
+                Object.keys(vessel.additionalFields).forEach(key => {
+                    const value = vessel.additionalFields?.[key];
+                    // Check if this column has a non-empty value
+                    const hasValue = value !== undefined && value !== null && value !== '' && value !== 0;
+                    
+                    if (!columnMap.has(key)) {
+                        // Initialize column with hasValue status
+                        const displayName = key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                        
+                        columnMap.set(key, {
+                            name: displayName,
+                            key: key,
+                            unit: extractUnit(key),
+                            hasValue: hasValue
+                        });
+                    } else {
+                        // Update hasValue if any vessel has a value
+                        const existing = columnMap.get(key)!;
+                        if (hasValue) {
+                            existing.hasValue = true;
+                        }
+                    }
+                });
+            }
         });
         
-        const columns = Array.from(allKeys).map(key => ({
-            name: key.charAt(0).toUpperCase() + key.replace(/_/g, ' '),
-            key: key,
-            unit: extractUnit(key)
-        }));
+        // Only include columns that have at least one non-empty value
+        const columns = Array.from(columnMap.values())
+            .filter(col => col.hasValue)
+            .map(({ name, key, unit }) => ({
+                name,
+                key,
+                unit
+            }));
         
+        console.log('Dynamic columns with values:', columns.map(c => `${c.name} (${c.key})`));
         setDynamicColumns(columns);
     }, [vessels]);
 
@@ -169,9 +218,56 @@ const SupplyVesselsTable = ({
         return '';
     };
 
+    // Helper to get dynamic field value from vessel
+    const getDynamicField = (vessel: SupplyVessel, key: string): string | number => {
+        if (vessel.additionalFields && vessel.additionalFields.hasOwnProperty(key)) {
+            return vessel.additionalFields[key];
+        }
+        return '';
+    };
+
+    // Helper to check if a vessel has any dynamic fields with values
+    const hasDynamicFieldsWithValues = (vessel: SupplyVessel): boolean => {
+        if (!vessel.additionalFields) return false;
+        return Object.values(vessel.additionalFields).some(
+            value => value !== undefined && value !== null && value !== '' && value !== 0
+        );
+    };
+
     const handleEditClick = () => {
-        setTempVessels(JSON.parse(JSON.stringify(vessels)));
+        // Deep clone vessels with additionalFields
+        const clonedVessels = vessels.map(v => ({
+            ...v,
+            additionalFields: { ...v.additionalFields }
+        }));
+        setTempVessels(clonedVessels);
+        
+        // Initialize temp dynamic columns from vessels (including empty ones for editing)
+        const allKeys = new Set<string>();
+        clonedVessels.forEach(vessel => {
+            if (vessel.additionalFields) {
+                Object.keys(vessel.additionalFields).forEach(key => {
+                    allKeys.add(key);
+                });
+            }
+        });
+        
+        const tempColumns = Array.from(allKeys).map(key => {
+            const displayName = key
+                .split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+            return {
+                name: displayName,
+                key: key,
+                unit: extractUnit(key)
+            };
+        });
+        setTempDynamicColumns(tempColumns);
+        
         setEditingIndex(null);
+        setShowAddColumn(false);
+        setRenamingColumn(null);
         setEditDialogOpen(true);
     };
 
@@ -179,11 +275,39 @@ const SupplyVesselsTable = ({
         setEditDialogOpen(false);
         setEditingIndex(null);
         setEditingData({});
+        setShowAddColumn(false);
+        setRenamingColumn(null);
+        setNewColumnName('');
+        setNewColumnUnit('');
+        setRenameColumnName('');
+        setTempDynamicColumns([]);
     };
 
     const handleSaveVessels = async () => {
-        const updatedVessels = tempVessels.map((v, idx) => ({ ...v, id: v.id || idx.toString() }));
+        // Ensure all vessels have additionalFields and IDs
+        const updatedVessels = tempVessels.map((v, idx) => {
+            const vessel = { ...v };
+            if (!vessel.id) {
+                vessel.id = idx.toString();
+            }
+            if (!vessel.additionalFields) {
+                vessel.additionalFields = {};
+            }
+            
+            // Keep ALL fields in additionalFields (including empty ones)
+            // We keep empty fields so the columns remain visible in edit mode
+            // But for display, we'll filter out empty ones
+            
+            return vessel;
+        });
+        
+        console.log('Saving vessels with additionalFields:', updatedVessels.map(v => ({
+            name: v.vessel,
+            additionalFields: v.additionalFields
+        })));
+        
         onVesselsChange(updatedVessels);
+        
         if (onSave) {
             for (const vessel of updatedVessels) {
                 await onSave(vessel);
@@ -194,30 +318,66 @@ const SupplyVesselsTable = ({
 
     const handleEditVessel = (index: number) => {
         setEditingIndex(index);
-        setEditingData({ ...tempVessels[index] });
+        // Deep clone the vessel data including additionalFields
+        const vessel = tempVessels[index];
+        setEditingData({ 
+            ...vessel,
+            additionalFields: { ...vessel.additionalFields }
+        });
+        setShowAddColumn(false);
+        setRenamingColumn(null);
     };
 
     const handleCancelEdit = () => {
         setEditingIndex(null);
         setEditingData({});
+        setShowAddColumn(false);
+        setRenamingColumn(null);
     };
 
     const handleSaveEdit = () => {
         if (editingIndex !== null && editingData) {
             const updated = [...tempVessels];
-            updated[editingIndex] = { 
-                ...updated[editingIndex], 
-                ...editingData,
-                crewChange: formatDateForSave(editingData.crewChange || '')
+            const currentVessel = updated[editingIndex];
+            
+            // Merge the editing data with the current vessel
+            const vesselData = { 
+                ...currentVessel,
+                vessel: editingData.vessel !== undefined ? editingData.vessel : currentVessel.vessel,
+                location: editingData.location !== undefined ? editingData.location : currentVessel.location,
+                crewChange: editingData.crewChange !== undefined ? formatDateForSave(editingData.crewChange) : currentVessel.crewChange,
+                fuelOil: editingData.fuelOil !== undefined ? editingData.fuelOil : currentVessel.fuelOil,
+                potWater: editingData.potWater !== undefined ? editingData.potWater : currentVessel.potWater,
+                drlWater: editingData.drlWater !== undefined ? editingData.drlWater : currentVessel.drlWater,
+                barite: editingData.barite !== undefined ? editingData.barite : currentVessel.barite,
+                baseOil: editingData.baseOil !== undefined ? editingData.baseOil : currentVessel.baseOil,
+                cementG: editingData.cementG !== undefined ? editingData.cementG : currentVessel.cementG,
+                additionalFields: {
+                    ...currentVessel.additionalFields,
+                    ...editingData.additionalFields
+                }
             };
+            
+            updated[editingIndex] = vesselData;
             setTempVessels(updated);
             setEditingIndex(null);
             setEditingData({});
+            setShowAddColumn(false);
+            setRenamingColumn(null);
         }
     };
 
     const handleInputChange = (field: string, value: string | number) => {
         setEditingData({ ...editingData, [field]: value });
+    };
+
+    const handleDynamicInputChange = (key: string, value: string | number) => {
+        const updatedData = { ...editingData };
+        if (!updatedData.additionalFields) {
+            updatedData.additionalFields = {};
+        }
+        updatedData.additionalFields[key] = value;
+        setEditingData(updatedData);
     };
 
     const handleAddVessel = () => {
@@ -231,14 +391,22 @@ const SupplyVesselsTable = ({
             drlWater: 0,
             barite: 0,
             baseOil: 0,
-            cementG: 0
+            cementG: 0,
+            additionalFields: {}
         };
-        dynamicColumns.forEach(col => {
-            newVessel[col.key] = '';
+        
+        // Initialize with existing dynamic columns
+        tempDynamicColumns.forEach(col => {
+            if (newVessel.additionalFields) {
+                newVessel.additionalFields[col.key] = '';
+            }
         });
+        
         setTempVessels([...tempVessels, newVessel]);
         setEditingIndex(tempVessels.length);
-        setEditingData(newVessel);
+        setEditingData({ ...newVessel });
+        setShowAddColumn(false);
+        setRenamingColumn(null);
     };
 
     const handleDeleteVessel = (index: number) => {
@@ -248,6 +416,8 @@ const SupplyVesselsTable = ({
             if (editingIndex === index) {
                 setEditingIndex(null);
                 setEditingData({});
+                setShowAddColumn(false);
+                setRenamingColumn(null);
             }
         }
     };
@@ -266,26 +436,152 @@ const SupplyVesselsTable = ({
         setTempVessels(newVessels);
     };
 
-    const handleAddColumn = () => {
+    const handleAddColumnFromEdit = () => {
+        setShowAddColumn(true);
+        setNewColumnName('');
+        setNewColumnUnit('');
+        setRenamingColumn(null);
+    };
+
+    const handleConfirmAddColumn = () => {
         if (newColumnName.trim()) {
-            const newKey = newColumnName.toLowerCase().replace(/\s+/g, '_');
+            const newKey = generateKey(newColumnName);
+            
+            // Check if key already exists in temp columns
+            if (tempDynamicColumns.some(col => col.key === newKey)) {
+                alert(`A column with the name "${newColumnName}" already exists. Please use a different name.`);
+                return;
+            }
+            
+            // Add to temp dynamic columns
             const newColumn: DynamicColumn = {
                 name: newColumnName,
                 key: newKey,
                 unit: newColumnUnit
             };
-            setDynamicColumns([...dynamicColumns, newColumn]);
+            setTempDynamicColumns([...tempDynamicColumns, newColumn]);
             
+            // Add the new column to ALL vessels with EMPTY values
             const updatedVessels = tempVessels.map(vessel => ({
                 ...vessel,
-                [newKey]: ''
+                additionalFields: {
+                    ...vessel.additionalFields,
+                    [newKey]: '' // Empty string for all vessels
+                }
             }));
             setTempVessels(updatedVessels);
             
-            setColumnDialogOpen(false);
+            // If currently editing, update editing data to include new field (empty)
+            if (editingIndex !== null && editingData) {
+                const updatedData = { ...editingData };
+                if (!updatedData.additionalFields) {
+                    updatedData.additionalFields = {};
+                }
+                updatedData.additionalFields[newKey] = '';
+                setEditingData(updatedData);
+            }
+            
+            setShowAddColumn(false);
             setNewColumnName('');
             setNewColumnUnit('');
         }
+    };
+
+    const handleCancelAddColumn = () => {
+        setShowAddColumn(false);
+        setNewColumnName('');
+        setNewColumnUnit('');
+    };
+
+    const handleStartRenameColumn = (key: string, currentName: string) => {
+        setRenamingColumn(key);
+        setRenameColumnName(currentName);
+        setShowAddColumn(false);
+    };
+
+    const handleCancelRenameColumn = () => {
+        setRenamingColumn(null);
+        setRenameColumnName('');
+    };
+
+    const handleConfirmRenameColumn = () => {
+        if (renamingColumn && renameColumnName.trim()) {
+            const oldKey = renamingColumn;
+            const newKey = generateKey(renameColumnName);
+            
+            // Check if new key already exists
+            if (oldKey !== newKey && tempDynamicColumns.some(col => col.key === newKey)) {
+                alert(`A column with the name "${renameColumnName}" already exists. Please use a different name.`);
+                return;
+            }
+            
+            // Update temp dynamic columns
+            const updatedColumns = tempDynamicColumns.map(col => {
+                if (col.key === oldKey) {
+                    return { ...col, name: renameColumnName, key: newKey };
+                }
+                return col;
+            });
+            setTempDynamicColumns(updatedColumns);
+            
+            // Update all vessels with the new key
+            const updatedVessels = tempVessels.map(vessel => {
+                const vesselCopy = { ...vessel };
+                if (vesselCopy.additionalFields && vesselCopy.additionalFields[oldKey] !== undefined) {
+                    // Copy value to new key
+                    const value = vesselCopy.additionalFields[oldKey];
+                    const newFields = { ...vesselCopy.additionalFields };
+                    newFields[newKey] = value;
+                    delete newFields[oldKey];
+                    vesselCopy.additionalFields = newFields;
+                }
+                return vesselCopy;
+            });
+            setTempVessels(updatedVessels);
+            
+            // Update editing data if currently editing
+            if (editingIndex !== null && editingData && editingData.additionalFields) {
+                const updatedData = { ...editingData };
+                if (updatedData.additionalFields && updatedData.additionalFields[oldKey] !== undefined) {
+                    const value = updatedData.additionalFields[oldKey];
+                    const newFields = { ...updatedData.additionalFields };
+                    newFields[newKey] = value;
+                    delete newFields[oldKey];
+                    updatedData.additionalFields = newFields;
+                    setEditingData(updatedData);
+                }
+            }
+            
+            setRenamingColumn(null);
+            setRenameColumnName('');
+        }
+    };
+
+    // Get columns to display in edit mode
+    const getEditColumns = () => {
+        // Start with temp dynamic columns
+        const columns = [...tempDynamicColumns];
+        
+        // Also include any additionalFields from vessels that might not be in tempDynamicColumns
+        tempVessels.forEach(vessel => {
+            if (vessel.additionalFields) {
+                Object.keys(vessel.additionalFields).forEach(key => {
+                    if (!columns.some(col => col.key === key)) {
+                        const displayName = key
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                        columns.push({
+                            name: displayName,
+                            key: key,
+                            unit: extractUnit(key)
+                        });
+                    }
+                });
+            }
+        });
+        
+        return columns;
     };
 
     return (
@@ -352,11 +648,14 @@ const SupplyVesselsTable = ({
                                 <TableCell className={`table-body-cell ${(!vessel.cementG || vessel.cementG === 0) ? 'empty-cell' : ''}`} align="center">
                                     {vessel.cementG || '—'}
                                 </TableCell>
-                                {dynamicColumns.map(col => (
-                                    <TableCell key={col.key} className={`table-body-cell ${(!vessel[col.key]) ? 'empty-cell' : ''}`} align="center">
-                                        {vessel[col.key] || '—'}
-                                    </TableCell>
-                                ))}
+                                {dynamicColumns.map(col => {
+                                    const value = getDynamicField(vessel, col.key);
+                                    return (
+                                        <TableCell key={col.key} className={`table-body-cell ${(!value) ? 'empty-cell' : ''}`} align="center">
+                                            {value || '—'}
+                                        </TableCell>
+                                    );
+                                })}
                                 {!readOnly && <TableCell className="table-body-cell" align="center"></TableCell>}
                             </TableRow>
                         ))}
@@ -366,81 +665,246 @@ const SupplyVesselsTable = ({
 
             {/* Edit Supply Vessels Dialog */}
             <Dialog open={editDialogOpen} onClose={handleCloseDialog} maxWidth="lg" fullWidth>
-                <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <DialogTitle sx={{ fontSize: '1.25rem', fontWeight: 600 }}>
                     Edit Supply Vessels
-                    <IconButton onClick={() => setColumnDialogOpen(true)} size="small" title="Add Column">
-                        <ViewColumn fontSize="small" />
-                    </IconButton>
                 </DialogTitle>
                 <DialogContent>
                     <div className="supply-edit-list">
-                        {tempVessels.map((vessel, idx) => (
-                            <div key={vessel.id || idx} className="supply-edit-row">
-                                {editingIndex === idx ? (
-                                    <div className="supply-edit-fields">
-                                        <TextField size="small" label="Vessel Name" value={editingData.vessel || ''} onChange={(e) => handleInputChange('vessel', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Location" value={editingData.location || ''} onChange={(e) => handleInputChange('location', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Crew Change" type="date" value={formatDateForInput(editingData.crewChange || '')} onChange={(e) => handleInputChange('crewChange', e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
-                                        <TextField size="small" label="Fuel Oil" type="text" value={editingData.fuelOil || ''} onChange={(e) => handleInputChange('fuelOil', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Pot Water" type="text" value={editingData.potWater || ''} onChange={(e) => handleInputChange('potWater', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Drl Water" type="text" value={editingData.drlWater || ''} onChange={(e) => handleInputChange('drlWater', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Barite" type="text" value={editingData.barite || ''} onChange={(e) => handleInputChange('barite', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Base Oil" type="text" value={editingData.baseOil || ''} onChange={(e) => handleInputChange('baseOil', e.target.value)} fullWidth />
-                                        <TextField size="small" label="Cement G" type="text" value={editingData.cementG || ''} onChange={(e) => handleInputChange('cementG', e.target.value)} fullWidth />
-                                        {dynamicColumns.map(col => (
-                                            <TextField key={col.key} size="small" label={col.name} value={editingData[col.key] || ''} onChange={(e) => handleInputChange(col.key, e.target.value)} fullWidth />
-                                        ))}
-                                        <div className="edit-actions">
-                                            <IconButton onClick={handleSaveEdit} color="primary"><Save /></IconButton>
-                                            <IconButton onClick={handleCancelEdit} color="secondary"><Cancel /></IconButton>
+                        {tempVessels.map((vessel, idx) => {
+                            const editColumns = getEditColumns();
+                            return (
+                                <div key={vessel.id || idx} className="supply-edit-row">
+                                    {editingIndex === idx ? (
+                                        <div className="supply-edit-fields">
+                                            <TextField 
+                                                size="small" 
+                                                label="Vessel Name" 
+                                                value={editingData.vessel || ''} 
+                                                onChange={(e) => handleInputChange('vessel', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Location" 
+                                                value={editingData.location || ''} 
+                                                onChange={(e) => handleInputChange('location', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Crew Change" 
+                                                type="date" 
+                                                value={formatDateForInput(editingData.crewChange || '')} 
+                                                onChange={(e) => handleInputChange('crewChange', e.target.value)} 
+                                                InputLabelProps={{ shrink: true }} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Fuel Oil" 
+                                                type="text" 
+                                                value={editingData.fuelOil || ''} 
+                                                onChange={(e) => handleInputChange('fuelOil', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Pot Water" 
+                                                type="text" 
+                                                value={editingData.potWater || ''} 
+                                                onChange={(e) => handleInputChange('potWater', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Drl Water" 
+                                                type="text" 
+                                                value={editingData.drlWater || ''} 
+                                                onChange={(e) => handleInputChange('drlWater', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Barite" 
+                                                type="text" 
+                                                value={editingData.barite || ''} 
+                                                onChange={(e) => handleInputChange('barite', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Base Oil" 
+                                                type="text" 
+                                                value={editingData.baseOil || ''} 
+                                                onChange={(e) => handleInputChange('baseOil', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            <TextField 
+                                                size="small" 
+                                                label="Cement G" 
+                                                type="text" 
+                                                value={editingData.cementG || ''} 
+                                                onChange={(e) => handleInputChange('cementG', e.target.value)} 
+                                                fullWidth 
+                                            />
+                                            
+                                            {/* Dynamic Columns - Editable with Rename Option */}
+                                            {editColumns.map(col => {
+                                                const value = editingData.additionalFields?.[col.key] || '';
+                                                const isRenaming = renamingColumn === col.key;
+                                                
+                                                return (
+                                                    <div key={col.key} style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                                                        {isRenaming ? (
+                                                            <>
+                                                                <TextField 
+                                                                    size="small" 
+                                                                    label="New Column Name" 
+                                                                    value={renameColumnName} 
+                                                                    onChange={(e) => setRenameColumnName(e.target.value)}
+                                                                    placeholder="Enter new name"
+                                                                    sx={{ flex: 1 }}
+                                                                    autoFocus
+                                                                />
+                                                                <IconButton onClick={handleConfirmRenameColumn} color="primary" size="small" title="Confirm Rename">
+                                                                    <Save fontSize="small" />
+                                                                </IconButton>
+                                                                <IconButton onClick={handleCancelRenameColumn} color="secondary" size="small" title="Cancel">
+                                                                    <Cancel fontSize="small" />
+                                                                </IconButton>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <TextField 
+                                                                    size="small" 
+                                                                    label={`${col.name} ${col.unit ? `(${col.unit})` : ''}`}
+                                                                    value={value} 
+                                                                    onChange={(e) => handleDynamicInputChange(col.key, e.target.value)} 
+                                                                    sx={{ flex: 1 }}
+                                                                    placeholder={`Enter ${col.name.toLowerCase()}`}
+                                                                />
+                                                                <Tooltip title="Rename column">
+                                                                    <IconButton 
+                                                                        size="small" 
+                                                                        onClick={() => handleStartRenameColumn(col.key, col.name)}
+                                                                        color="primary"
+                                                                    >
+                                                                        <DriveFileRenameOutline fontSize="small" />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                            
+                                            {/* Add Column Section */}
+                                            {!showAddColumn ? (
+                                                <Button 
+                                                    size="small" 
+                                                    startIcon={<Add />} 
+                                                    onClick={handleAddColumnFromEdit}
+                                                    variant="outlined"
+                                                    sx={{ mt: 1, mb: 1 }}
+                                                >
+                                                    Add New Column
+                                                </Button>
+                                            ) : (
+                                                <div className="add-column-section" style={{ 
+                                                    display: 'flex', 
+                                                    flexDirection: 'column', 
+                                                    gap: '8px', 
+                                                    padding: '12px', 
+                                                    backgroundColor: '#f5f5f5', 
+                                                    borderRadius: '4px',
+                                                    marginTop: '8px',
+                                                    marginBottom: '8px',
+                                                    width: '100%'
+                                                }}>
+                                                    <Typography variant="caption" color="textSecondary">
+                                                        Add new column to all vessels (values will be empty by default):
+                                                    </Typography>
+                                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                        <TextField 
+                                                            size="small" 
+                                                            label="Column Name" 
+                                                            value={newColumnName} 
+                                                            onChange={(e) => setNewColumnName(e.target.value)}
+                                                            placeholder="e.g., Chemicals"
+                                                            sx={{ flex: 1, minWidth: '150px' }}
+                                                            autoFocus
+                                                        />
+                                                        <TextField 
+                                                            size="small" 
+                                                            label="Unit (optional)" 
+                                                            value={newColumnUnit} 
+                                                            onChange={(e) => setNewColumnUnit(e.target.value)}
+                                                            placeholder="e.g., mt"
+                                                            sx={{ flex: 0.5, minWidth: '100px' }}
+                                                        />
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="contained" 
+                                                            color="primary"
+                                                            onClick={handleConfirmAddColumn}
+                                                            disabled={!newColumnName.trim()}
+                                                        >
+                                                            Add Column
+                                                        </Button>
+                                                        <Button 
+                                                            size="small" 
+                                                            variant="outlined"
+                                                            onClick={handleCancelAddColumn}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="edit-actions">
+                                                <IconButton onClick={handleSaveEdit} color="primary"><Save /></IconButton>
+                                                <IconButton onClick={handleCancelEdit} color="secondary"><Cancel /></IconButton>
+                                            </div>
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="supply-edit-row-content">
-                                        <span className="supply-edit-value">{vessel.vessel}</span>
-                                        <span className="supply-edit-value">{vessel.location || '—'}</span>
-                                        <span className="supply-edit-value">{formatDateToDisplay(vessel.crewChange)}</span>
-                                        <span className="supply-edit-number">{vessel.fuelOil}</span>
-                                        <span className="supply-edit-number">{vessel.potWater}</span>
-                                        <span className="supply-edit-number">{vessel.drlWater}</span>
-                                        <span className="supply-edit-number">{vessel.barite}</span>
-                                        <span className="supply-edit-number">{vessel.baseOil}</span>
-                                        <span className="supply-edit-number">{vessel.cementG}</span>
-                                        {dynamicColumns.map(col => (
-                                            <span key={col.key} className="supply-edit-number">{vessel[col.key] || '—'}</span>
-                                        ))}
-                                        <div className="edit-actions">
-                                            <IconButton onClick={() => moveVesselUp(idx)} disabled={idx === 0}><ArrowUpward /></IconButton>
-                                            <IconButton onClick={() => moveVesselDown(idx)} disabled={idx === tempVessels.length - 1}><ArrowDownward /></IconButton>
-                                            <IconButton onClick={() => handleEditVessel(idx)} color="primary"><Edit /></IconButton>
-                                            <IconButton onClick={() => handleDeleteVessel(idx)} color="error"><Delete /></IconButton>
+                                    ) : (
+                                        <div className="supply-edit-row-content">
+                                            <span className="supply-edit-value">{vessel.vessel}</span>
+                                            <span className="supply-edit-value">{vessel.location || '—'}</span>
+                                            <span className="supply-edit-value">{formatDateToDisplay(vessel.crewChange)}</span>
+                                            <span className="supply-edit-number">{vessel.fuelOil}</span>
+                                            <span className="supply-edit-number">{vessel.potWater}</span>
+                                            <span className="supply-edit-number">{vessel.drlWater}</span>
+                                            <span className="supply-edit-number">{vessel.barite}</span>
+                                            <span className="supply-edit-number">{vessel.baseOil}</span>
+                                            <span className="supply-edit-number">{vessel.cementG}</span>
+                                            {editColumns.map(col => {
+                                                const value = getDynamicField(vessel, col.key);
+                                                return (
+                                                    <span key={col.key} className="supply-edit-number">{value || '—'}</span>
+                                                );
+                                            })}
+                                            <div className="edit-actions">
+                                                <IconButton onClick={() => moveVesselUp(idx)} disabled={idx === 0}><ArrowUpward /></IconButton>
+                                                <IconButton onClick={() => moveVesselDown(idx)} disabled={idx === tempVessels.length - 1}><ArrowDownward /></IconButton>
+                                                <IconButton onClick={() => handleEditVessel(idx)} color="primary"><Edit /></IconButton>
+                                                <IconButton onClick={() => handleDeleteVessel(idx)} color="error"><Delete /></IconButton>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
-                    <Button startIcon={<Add />} onClick={handleAddVessel} variant="outlined" sx={{ mt: 2 }}>Add Supply Vessel</Button>
+                    <Button startIcon={<Add />} onClick={handleAddVessel} variant="outlined" sx={{ mt: 2 }}>
+                        Add Supply Vessel
+                    </Button>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button onClick={handleSaveVessels} variant="contained" color="primary">Save Changes</Button>
-                </DialogActions>
-            </Dialog>
-
-            {/* Add Column Dialog */}
-            <Dialog open={columnDialogOpen} onClose={() => setColumnDialogOpen(false)} maxWidth="sm" fullWidth>
-                <DialogTitle>Add Dynamic Column</DialogTitle>
-                <DialogContent>
-                    <TextField autoFocus margin="dense" label="Column Name" fullWidth value={newColumnName} onChange={(e) => setNewColumnName(e.target.value)} />
-                    <TextField margin="dense" label="Unit (optional)" fullWidth value={newColumnUnit} onChange={(e) => setNewColumnUnit(e.target.value)} />
-                    <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
-                        This column will be added to all vessels. Enter values in edit mode.
-                    </Typography>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setColumnDialogOpen(false)}>Cancel</Button>
-                    <Button onClick={handleAddColumn} variant="contained" color="primary">Add Column</Button>
                 </DialogActions>
             </Dialog>
         </Paper>

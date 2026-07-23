@@ -92,24 +92,31 @@ export const useWellOperations = (
     }, [currentWellId, setFluidData, updateLastUpdated, showSnackbar]);
 
     const handleVesselsChange = useCallback(async (newVessels: SupplyVessel[]) => {
+        if (!currentWellId) {
+            console.warn('No current well ID, cannot update vessels');
+            return;
+        }
+
         const isAddOperation = newVessels.length > vessels.length;
         const isDeleteOperation = newVessels.length < vessels.length;
         
-        if (isAddOperation && currentWellId) {
+        if (isAddOperation) {
             const newVessel = newVessels.find(v => !vessels.some(old => old.id === v.id));
             if (newVessel) {
                 try {
                     const apiVessel = {
                         vesselName: newVessel.vessel,
-                        location: newVessel.location,
-                        crewChange: newVessel.crewChange,
-                        fuelOil: newVessel.fuelOil.toString(),
-                        potWater: newVessel.potWater.toString(),
-                        drlWater: newVessel.drlWater.toString(),
-                        barite: newVessel.barite.toString(),
-                        baseOil: newVessel.baseOil.toString(),
-                        cementG: newVessel.cementG.toString()
+                        location: newVessel.location || '',
+                        crewChange: newVessel.crewChange || '',
+                        fuelOil: newVessel.fuelOil ? String(newVessel.fuelOil) : '',
+                        potWater: newVessel.potWater ? String(newVessel.potWater) : '',
+                        drlWater: newVessel.drlWater ? String(newVessel.drlWater) : '',
+                        barite: newVessel.barite ? String(newVessel.barite) : '',
+                        baseOil: newVessel.baseOil ? String(newVessel.baseOil) : '',
+                        cementG: newVessel.cementG ? String(newVessel.cementG) : '',
+                        additionalFields: newVessel.additionalFields || {} // ✅ Added
                     };
+                    console.log('Adding vessel with additionalFields:', apiVessel.additionalFields);
                     await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
                     showSnackbar('Vessel added successfully', 'success');
                     await loadWellData(currentWellId, false);
@@ -120,7 +127,7 @@ export const useWellOperations = (
                     return;
                 }
             }
-        } else if (isDeleteOperation && currentWellId) {
+        } else if (isDeleteOperation) {
             const deletedVessel = vessels.find(v => !newVessels.some(old => old.id === v.id));
             if (deletedVessel) {
                 try {
@@ -134,7 +141,39 @@ export const useWellOperations = (
                     return;
                 }
             }
+        } else {
+            // This is an update operation (edit existing vessels)
+            try {
+                // Convert all vessels to API format with additionalFields
+                const vesselsToSave = newVessels.map(v => ({
+                    vesselName: v.vessel,
+                    location: v.location || '',
+                    crewChange: v.crewChange || '',
+                    fuelOil: v.fuelOil ? String(v.fuelOil) : '',
+                    potWater: v.potWater ? String(v.potWater) : '',
+                    drlWater: v.drlWater ? String(v.drlWater) : '',
+                    barite: v.barite ? String(v.barite) : '',
+                    baseOil: v.baseOil ? String(v.baseOil) : '',
+                    cementG: v.cementG ? String(v.cementG) : '',
+                    additionalFields: v.additionalFields || {} // ✅ Added
+                }));
+                
+                console.log('Saving vessels with additionalFields:', vesselsToSave.map(v => v.additionalFields));
+                
+                // Use a single patch to update all vessels at once
+                await wellApi.patchWell(currentWellId, { supplyVessels: vesselsToSave });
+                showSnackbar('Vessels updated successfully', 'success');
+                updateLastUpdated();
+            } catch (err) {
+                console.error('Failed to update vessels:', err);
+                showSnackbar('Failed to update vessels', 'error');
+                // Reload to revert changes
+                await loadWellData(currentWellId, false);
+                return;
+            }
         }
+        
+        // Update local state
         setVessels(newVessels);
     }, [currentWellId, vessels, setVessels, loadWellData, updateLastUpdated, showSnackbar]);
 
@@ -142,40 +181,85 @@ export const useWellOperations = (
         if (!currentWellId) return;
         try {
             const index = vessels.findIndex(v => v.id === vessel.id);
-            const apiVessel = {
-                vesselName: vessel.vessel,
-                location: vessel.location,
-                crewChange: vessel.crewChange,
-                fuelOil: vessel.fuelOil.toString(),
-                potWater: vessel.potWater.toString(),
-                drlWater: vessel.drlWater.toString(),
-                barite: vessel.barite.toString(),
-                baseOil: vessel.baseOil.toString(),
-                cementG: vessel.cementG.toString()
-            };
-            await supplyVesselApi.updateSupplyVessel(currentWellId, index, apiVessel);
+            if (index === -1) {
+                // Vessel doesn't exist yet - add it
+                const apiVessel = {
+                    vesselName: vessel.vessel,
+                    location: vessel.location || '',
+                    crewChange: vessel.crewChange || '',
+                    fuelOil: vessel.fuelOil ? String(vessel.fuelOil) : '',
+                    potWater: vessel.potWater ? String(vessel.potWater) : '',
+                    drlWater: vessel.drlWater ? String(vessel.drlWater) : '',
+                    barite: vessel.barite ? String(vessel.barite) : '',
+                    baseOil: vessel.baseOil ? String(vessel.baseOil) : '',
+                    cementG: vessel.cementG ? String(vessel.cementG) : '',
+                    additionalFields: vessel.additionalFields || {} // ✅ Added
+                };
+                await supplyVesselApi.addSupplyVessel(currentWellId, apiVessel);
+            } else {
+                // Update existing vessel
+                const apiVessel = {
+                    vesselName: vessel.vessel,
+                    location: vessel.location || '',
+                    crewChange: vessel.crewChange || '',
+                    fuelOil: vessel.fuelOil ? String(vessel.fuelOil) : '',
+                    potWater: vessel.potWater ? String(vessel.potWater) : '',
+                    drlWater: vessel.drlWater ? String(vessel.drlWater) : '',
+                    barite: vessel.barite ? String(vessel.barite) : '',
+                    baseOil: vessel.baseOil ? String(vessel.baseOil) : '',
+                    cementG: vessel.cementG ? String(vessel.cementG) : '',
+                    additionalFields: vessel.additionalFields || {} // ✅ Added
+                };
+                console.log('Saving vessel with additionalFields:', apiVessel.additionalFields);
+                await supplyVesselApi.updateSupplyVessel(currentWellId, index, apiVessel);
+            }
+            
+            // Update local state
+            const updatedVessels = [...vessels];
+            if (index === -1) {
+                updatedVessels.push(vessel);
+            } else {
+                updatedVessels[index] = vessel;
+            }
+            setVessels(updatedVessels);
+            
             showSnackbar('Vessel saved successfully', 'success');
             updateLastUpdated();
+            
+            // Reload to ensure consistency
+            await loadWellData(currentWellId, false);
         } catch (err) {
             console.error('Failed to save vessel:', err);
             showSnackbar('Failed to save vessel', 'error');
             throw err;
         }
-    }, [currentWellId, vessels, updateLastUpdated, showSnackbar]);
+    }, [currentWellId, vessels, setVessels, loadWellData, updateLastUpdated, showSnackbar]);
 
     const handleDeleteVessel = useCallback(async (id: string) => {
         if (!currentWellId) return;
         try {
             const index = vessels.findIndex(v => v.id === id);
+            if (index === -1) {
+                showSnackbar('Vessel not found', 'error');
+                return;
+            }
             await supplyVesselApi.deleteSupplyVessel(currentWellId, index);
+            
+            // Update local state
+            const updatedVessels = vessels.filter(v => v.id !== id);
+            setVessels(updatedVessels);
+            
             showSnackbar('Vessel deleted successfully', 'success');
             updateLastUpdated();
+            
+            // Reload to ensure consistency
+            await loadWellData(currentWellId, false);
         } catch (err) {
             console.error('Failed to delete vessel:', err);
             showSnackbar('Failed to delete vessel', 'error');
             throw err;
         }
-    }, [currentWellId, vessels, updateLastUpdated, showSnackbar]);
+    }, [currentWellId, vessels, setVessels, loadWellData, updateLastUpdated, showSnackbar]);
 
     return {
         handleWellInfoUpdate,

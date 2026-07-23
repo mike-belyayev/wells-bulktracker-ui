@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import { 
     Paper, Typography, Table, TableBody, TableCell, TableContainer, 
     TableHead, TableRow, IconButton, TextField, Dialog, 
-    DialogTitle, DialogContent, DialogActions, Button
+    DialogTitle, DialogContent, DialogActions, Button,
+    Tooltip
 } from '@mui/material';
-import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import { Edit, Save, Cancel, Add, Delete, ArrowUpward, ArrowDownward, Info } from '@mui/icons-material';
 import './BOPSystems.css';
 
 export interface BopSystem {
@@ -13,6 +14,7 @@ export interface BopSystem {
     System: string;
     testDate: string;
     nextDate: string;
+    testPeriod: string; // New field - stored as string but will contain number
 }
 
 export interface MudPumpLiner {
@@ -134,6 +136,54 @@ const formatDateForSave = (dateString: string): string => {
     return dateString;
 };
 
+// Calculate next test date based on test period
+const calculateNextDate = (testDate: string, testPeriod: string): string => {
+    if (!testDate || !testPeriod) return '';
+    
+    // Validate that testPeriod is a valid number
+    const periodDays = parseInt(testPeriod);
+    if (isNaN(periodDays) || periodDays <= 0) return '';
+    
+    try {
+        // Parse the test date
+        let dateObj: Date;
+        
+        // Handle DD-MMM-YYYY format
+        const match = testDate.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})$/);
+        if (match) {
+            const monthMap: { [key: string]: number } = {
+                'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3,
+                'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7,
+                'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11
+            };
+            const day = parseInt(match[1]);
+            const month = monthMap[match[2].toUpperCase()];
+            const year = parseInt(match[3]);
+            dateObj = new Date(year, month, day);
+        } else {
+            // Try parsing as ISO or other formats
+            dateObj = new Date(testDate);
+        }
+        
+        if (isNaN(dateObj.getTime())) return '';
+        
+        // Add the test period in days
+        const nextDate = new Date(dateObj);
+        nextDate.setDate(nextDate.getDate() + periodDays);
+        
+        // Format as DD-MMM-YYYY
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const day = String(nextDate.getDate()).padStart(2, '0');
+        const month = monthNames[nextDate.getMonth()];
+        const year = nextDate.getFullYear();
+        
+        return `${day}-${month}-${year}`;
+    } catch {
+        return '';
+    }
+};
+
+// Check if date is urgent (past due OR within 3 days)
 const isDateUrgent = (dateString: string): boolean => {
     if (!dateString || dateString === '—') return false;
     try {
@@ -156,6 +206,8 @@ const isDateUrgent = (dateString: string): boolean => {
             targetDate.setHours(0, 0, 0, 0);
             
             const diffDays = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Highlight if date is past (diffDays < 0) OR within 3 days (diffDays <= 3)
             return diffDays < 0 || (diffDays >= 0 && diffDays <= 3);
         }
     } catch {
@@ -190,7 +242,8 @@ const BOPSystems = ({
                 id: system.id || `bop_${idx}`,
                 System: system.System || '',
                 testDate: formatDateToDisplay(system.testDate),
-                nextDate: formatDateToDisplay(system.nextDate)
+                nextDate: formatDateToDisplay(system.nextDate),
+                testPeriod: system.testPeriod || '' // Include testPeriod
             }));
             setBopSystems(formattedData);
         } else {
@@ -240,7 +293,8 @@ const BOPSystems = ({
             const systemsToSave = tempBopSystems.map((s) => ({
                 System: s.System,
                 testDate: formatDateForSave(s.testDate),
-                nextDate: formatDateForSave(s.nextDate)
+                nextDate: formatDateForSave(s.nextDate),
+                testPeriod: s.testPeriod || '' // Include testPeriod
             }));
             await onBopUpdate(systemsToSave);
             setBopSystems(tempBopSystems);
@@ -276,7 +330,23 @@ const BOPSystems = ({
     const handleSaveBopEdit = () => {
         if (editingBopIndex !== null && editingBopData) {
             const updated = [...tempBopSystems];
-            updated[editingBopIndex] = { ...updated[editingBopIndex], ...editingBopData };
+            const updatedSystem = { ...updated[editingBopIndex], ...editingBopData };
+            
+            // Auto-calculate next date if test date and period are set
+            if (updatedSystem.testDate && updatedSystem.testPeriod) {
+                const calculatedNextDate = calculateNextDate(updatedSystem.testDate, updatedSystem.testPeriod);
+                if (calculatedNextDate) {
+                    updatedSystem.nextDate = calculatedNextDate;
+                }
+            } else if (!updatedSystem.testPeriod) {
+                // If no test period, don't auto-update next date
+                // Keep the existing next date or clear it
+                if (!updatedSystem.nextDate) {
+                    updatedSystem.nextDate = '';
+                }
+            }
+            
+            updated[editingBopIndex] = updatedSystem;
             setTempBopSystems(updated);
             setEditingBopIndex(null);
             setEditingBopData({});
@@ -287,12 +357,51 @@ const BOPSystems = ({
         setEditingBopData({ ...editingBopData, [field]: value });
     };
 
+    // Special handler for test date changes - auto-calculate next date if period is set
+    const handleTestDateChange = (value: string) => {
+        const updatedData = { ...editingBopData, testDate: value };
+        
+        // If test period is set, auto-calculate next date
+        if (value && editingBopData.testPeriod) {
+            const calculatedNextDate = calculateNextDate(value, editingBopData.testPeriod);
+            if (calculatedNextDate) {
+                updatedData.nextDate = calculatedNextDate;
+            }
+        }
+        
+        setEditingBopData(updatedData);
+    };
+
+    // Special handler for test period changes - auto-calculate next date if test date is set
+    const handleTestPeriodChange = (value: string) => {
+        // Only allow numbers, empty string
+        if (value !== '' && !/^\d+$/.test(value)) {
+            return;
+        }
+        
+        const updatedData = { ...editingBopData, testPeriod: value };
+        
+        // If test date is set and period is not empty, auto-calculate next date
+        if (editingBopData.testDate && value) {
+            const calculatedNextDate = calculateNextDate(editingBopData.testDate, value);
+            if (calculatedNextDate) {
+                updatedData.nextDate = calculatedNextDate;
+            }
+        } else if (!value) {
+            // If period is cleared, clear the next date
+            updatedData.nextDate = '';
+        }
+        
+        setEditingBopData(updatedData);
+    };
+
     const handleAddBop = () => {
         const newSystem: BopSystem = {
             id: `bop_${Date.now()}`,
             System: '',
             testDate: '',
-            nextDate: ''
+            nextDate: '',
+            testPeriod: ''
         };
         setTempBopSystems([...tempBopSystems, newSystem]);
         setEditingBopIndex(tempBopSystems.length);
@@ -490,7 +599,7 @@ const BOPSystems = ({
             </Paper>
 
             {/* Edit BOP Systems Dialog */}
-            <Dialog open={bopDialogOpen} onClose={handleCloseBopDialog} maxWidth="md" fullWidth>
+            <Dialog open={bopDialogOpen} onClose={handleCloseBopDialog} maxWidth="lg" fullWidth>
                 <DialogTitle>
                     <TextField
                         value={bopTableName}
@@ -511,7 +620,7 @@ const BOPSystems = ({
                                             label="System Name"
                                             value={editingBopData.System || ''}
                                             onChange={(e) => handleBopInputChange('System', e.target.value)}
-                                            sx={{ width: 200 }}
+                                            sx={{ width: 180 }}
                                             autoFocus
                                         />
                                         <TextField
@@ -519,9 +628,25 @@ const BOPSystems = ({
                                             label="Test Date"
                                             type="date"
                                             value={formatDateForInput(editingBopData.testDate || '')}
-                                            onChange={(e) => handleBopInputChange('testDate', e.target.value)}
+                                            onChange={(e) => handleTestDateChange(e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             sx={{ width: 140 }}
+                                        />
+                                        <TextField
+                                            size="small"
+                                            label="Test Period (days)"
+                                            value={editingBopData.testPeriod || ''}
+                                            onChange={(e) => handleTestPeriodChange(e.target.value)}
+                                            placeholder="e.g., 7, 14, 30"
+                                            helperText="Enter number of days"
+                                            sx={{ width: 160 }}
+                                            InputProps={{
+                                                inputProps: { 
+                                                    min: 1,
+                                                    step: 1,
+                                                    pattern: '[0-9]*'
+                                                }
+                                            }}
                                         />
                                         <TextField
                                             size="small"
@@ -531,7 +656,12 @@ const BOPSystems = ({
                                             onChange={(e) => handleBopInputChange('nextDate', e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             sx={{ width: 140 }}
+                                            disabled={!!(editingBopData.testDate && editingBopData.testPeriod)}
+                                            helperText={editingBopData.testDate && editingBopData.testPeriod ? "Auto-calculated" : "Manual entry"}
                                         />
+                                        <Tooltip title="Next date auto-calculates when both Test Date and Test Period are set">
+                                            <Info fontSize="small" color="info" sx={{ ml: 1 }} />
+                                        </Tooltip>
                                         <div className="edit-actions">
                                             <IconButton size="small" onClick={handleSaveBopEdit} color="primary">
                                                 <Save fontSize="small" />
@@ -543,7 +673,7 @@ const BOPSystems = ({
                                     </div>
                                 ) : (
                                     <div className="edit-row-content">
-                                        <span className="edit-system">{system.System || '—'}</span>
+                                        <span className="edit-system" title={system.System}>{truncateText(system.System, 25)}</span>
                                         <span className="edit-date">{system.testDate || '—'}</span>
                                         <span className="edit-date">{system.nextDate || '—'}</span>
                                         <div className="edit-actions">
