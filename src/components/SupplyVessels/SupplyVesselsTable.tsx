@@ -227,12 +227,6 @@ const SupplyVesselsTable = ({
     };
 
     // Helper to check if a vessel has any dynamic fields with values
-    const hasDynamicFieldsWithValues = (vessel: SupplyVessel): boolean => {
-        if (!vessel.additionalFields) return false;
-        return Object.values(vessel.additionalFields).some(
-            value => value !== undefined && value !== null && value !== '' && value !== 0
-        );
-    };
 
     const handleEditClick = () => {
         // Deep clone vessels with additionalFields
