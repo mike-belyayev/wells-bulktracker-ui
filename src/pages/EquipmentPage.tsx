@@ -1,7 +1,7 @@
 // src/pages/EquipmentPage.tsx
 import { useState, useCallback } from 'react';
-import { AppBar, Toolbar, IconButton, Typography, Box, Button, Snackbar, Alert, Select, MenuItem, FormControl, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress } from '@mui/material';
-import { Settings, Dashboard, Refresh, ExitToApp, ContentCopy } from '@mui/icons-material';
+import { AppBar, Toolbar, IconButton, Typography, Box, Button, Snackbar, Alert, Select, MenuItem, FormControl, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Tooltip } from '@mui/material';
+import { Settings, Dashboard, Refresh, ExitToApp, ContentCopy, Cached } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { WellInformation, MudPitFluidData, BOPSystems } from '../components/Dashboard';
@@ -56,15 +56,23 @@ const EquipmentPage = () => {
         clearWellData
     } = useWellData(showSnackbar);
 
-    // Auto-refresh hook
-    const { autoRefreshEnabled, countdown, formatCountdown, toggleAutoRefresh } = useAutoRefresh(
+    // Auto-refresh hook with full reload option
+    const { 
+        autoRefreshEnabled, 
+        countdown, 
+        formatCountdown, 
+        toggleAutoRefresh,
+        manualFullReload,
+        isReloading
+    } = useAutoRefresh(
         async () => {
             if (currentWellId) {
                 await refreshWellData(currentWellId);
             }
         },
         true,
-        600000
+        600000,
+        false // Set to true if you want auto-refresh to do full page reload
     );
 
     // Well operations hook
@@ -206,6 +214,13 @@ const EquipmentPage = () => {
         }
     };
 
+    // Handle full page reload with confirmation
+    const handleFullReload = () => {
+        if (window.confirm('This will reload the entire application. Any unsaved changes will be lost. Continue?')) {
+            manualFullReload();
+        }
+    };
+
     if (loading && !vessels.length && !fluidData.length) {
         return (
             <div className="equipment-container">
@@ -243,13 +258,30 @@ const EquipmentPage = () => {
                             <ContentCopy />
                         </IconButton>
 
-                        <Button variant="contained" size="small" startIcon={<Refresh />} onClick={handleRefresh} className="refresh-btn" disabled={loading}>
-                            Refresh
-                        </Button>
+                        <Tooltip title="Refresh data from server (without page reload)">
+                            <Button 
+                                variant="contained" 
+                                size="small" 
+                                startIcon={<Refresh />} 
+                                onClick={handleRefresh} 
+                                className="refresh-btn" 
+                                disabled={loading}
+                            >
+                                Refresh Data
+                            </Button>
+                        </Tooltip>
 
-                        <Button variant={autoRefreshEnabled ? "contained" : "outlined"} size="small" onClick={toggleAutoRefresh} className={`auto-refresh-btn ${autoRefreshEnabled ? 'active' : ''}`}>
-                            {autoRefreshEnabled ? `Auto: ${formatCountdown(countdown)}` : "Auto Off"}
-                        </Button>
+                        <Tooltip title={`Auto-refresh ${autoRefreshEnabled ? 'ON' : 'OFF'} - Updates every 10 minutes`}>
+                            <Button 
+                                variant={autoRefreshEnabled ? "contained" : "outlined"} 
+                                size="small" 
+                                onClick={toggleAutoRefresh} 
+                                className={`auto-refresh-btn ${autoRefreshEnabled ? 'active' : ''}`}
+                                sx={autoRefreshEnabled ? {} : { color: 'white', borderColor: 'rgba(255,255,255,0.5)' }}
+                            >
+                                {autoRefreshEnabled ? `Auto: ${formatCountdown(countdown)}` : "Auto Off"}
+                            </Button>
+                        </Tooltip>
                     </Box>
 
                     <Box className="header-center">
@@ -258,6 +290,24 @@ const EquipmentPage = () => {
                                 Updated: {lastUpdated}
                             </Typography>
                         )}
+                        {/* Reload App icon button positioned after the last updated text */}
+                        <Tooltip title="Full page reload (like pressing F5) - reloads entire application">
+                            <IconButton 
+                                size="small" 
+                                onClick={handleFullReload} 
+                                className="reload-app-btn"
+                                disabled={isReloading}
+                                sx={{ 
+                                    color: 'white',
+                                    ml: 1,
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(255,255,255,0.15)'
+                                    }
+                                }}
+                            >
+                                <Cached fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
                     </Box>
 
                     <Box className="header-right">
